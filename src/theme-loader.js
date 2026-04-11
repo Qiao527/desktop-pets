@@ -391,11 +391,9 @@ function getAssetPath(filename) {
   if (!activeTheme) return path.join(assetsSvgDir, filename);
 
   if (activeTheme._builtin) {
-    // Built-in theme with own assets dir (e.g., calico with APNGs)
-    if (!filename.endsWith(".svg")) {
-      const themeAsset = path.join(activeTheme._themeDir, "assets", filename);
-      if (fs.existsSync(themeAsset)) return themeAsset;
-    }
+    // Prefer files shipped under themes/<id>/assets/ (SVG or raster), then global assets/svg.
+    const themeAsset = path.join(activeTheme._themeDir, "assets", filename);
+    if (fs.existsSync(themeAsset)) return themeAsset;
     return path.join(assetsSvgDir, filename);
   }
 
@@ -462,7 +460,9 @@ function getRendererConfig() {
     eyeTracking: t.eyeTracking,
     glyphFlips: t.miniMode ? t.miniMode.glyphFlips : {},
     miniFlipAssets: t.miniMode ? !!t.miniMode.flipAssets : false,
-    dragSvg: t.reactions && t.reactions.drag ? t.reactions.drag.file : null,
+    dragSvg: t.reactions && t.reactions.drag
+      ? (t.reactions.drag.file || null)
+      : "clawd-react-drag.svg",
     idleFollowSvg: t.states.idle[0],
     // renderer needs to know which states need eye tracking (for <object> vs <img> decision)
     eyeTrackingStates: t.eyeTracking.enabled ? t.eyeTracking.states : [],

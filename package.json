@@ -1,7 +1,7 @@
 {
-  "name": "clawd-on-desk",
+  "name": "desktop-pets",
   "version": "0.5.10",
-  "description": "A desktop pet that reacts to your Claude Code sessions in real-time.",
+  "description": "macOS menu bar desktop pet (themes, idle states, optional AI tool hooks).",
   "main": "src/main.js",
   "scripts": {
     "start": "node launch.js",
@@ -15,17 +15,17 @@
     "install:kiro-hooks": "node hooks/kiro-install.js"
   },
   "keywords": [
-    "clawd",
     "desktop-pet",
     "electron",
-    "claude-code"
+    "macos",
+    "menubar"
   ],
   "author": "rullerzhou-afk",
   "license": "MIT",
   "type": "commonjs",
   "build": {
-    "appId": "com.clawd.on-desk",
-    "productName": "Clawd on Desk",
+    "appId": "com.desktoppets.app",
+    "productName": "Desktop Pets",
     "mac": {
       "icon": "assets/icon.png",
       "target": [
@@ -45,7 +45,7 @@
     "win": {
       "icon": "assets/icon.ico",
       "signAndEditExecutable": false,
-      "artifactName": "Clawd-on-Desk-Setup-${version}.${ext}",
+      "artifactName": "Desktop-Pets-Setup-${version}.${ext}",
       "target": [
         {
           "target": "nsis",
@@ -86,6 +86,9 @@
       "assets/svg/**/*",
       "assets/sounds/**/*",
       "assets/tray-icon*.png",
+      "assets/tray-menubar.png",
+      "assets/tray-menubarTemplate.png",
+      "assets/tray-menubarTemplate@2x.png",
       "hooks/**/*",
       "extensions/**/*",
       "agents/**/*",

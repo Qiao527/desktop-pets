@@ -114,7 +114,7 @@ describe("resolveDisplayState()", () => {
   });
 
   it("full priority ordering", () => {
-    const ordered = ["sleeping", "idle", "thinking", "working", "juggling", "carrying", "attention", "sweeping", "notification", "error"];
+    const ordered = ["sleeping", "idle", "idle2", "listening", "typing", "hover", "thinking", "working", "juggling", "carrying", "attention", "sweeping", "notification", "error"];
     for (let i = 0; i < ordered.length - 1; i++) {
       const low = ordered[i];
       const high = ordered[i + 1];

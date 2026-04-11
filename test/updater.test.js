@@ -134,49 +134,59 @@ describe("updater visual flow", () => {
   });
 
   it("shows a real error bubble when packaged download fails after user starts it", async () => {
+    const originalPlatform = process.platform;
     const bubbles = [];
     const handlers = {};
-    const ctx = makeCtx({
-      showUpdateBubble: async (payload) => {
-        bubbles.push(payload);
-        if (payload.mode === "available") return "primary";
-        if (payload.mode === "error") return "dismiss";
-        return payload.defaultAction || null;
-      },
-    });
-    const updater = initUpdater(ctx, makeDeps({
-      autoUpdaterFactory: () => ({
-        autoDownload: false,
-        autoInstallOnAppQuit: true,
-        on(event, handler) { handlers[event] = handler; },
-        checkForUpdates: async () => ({ updateInfo: { version: "0.5.11" } }),
-        quitAndInstall() {},
-        downloadUpdate() {
-          return Promise.resolve().then(() => handlers.error(new Error("download exploded")));
+    Object.defineProperty(process, "platform", { value: "win32" });
+    try {
+      delete require.cache[require.resolve("../src/updater")];
+      initUpdater = require("../src/updater");
+      const ctx = makeCtx({
+        showUpdateBubble: async (payload) => {
+          bubbles.push(payload);
+          if (payload.mode === "available") return "primary";
+          if (payload.mode === "error") return "dismiss";
+          return payload.defaultAction || null;
         },
-      }),
-      httpsGetImpl: (options, cb) => {
-        const res = {
-          statusCode: 200,
-          on(event, handler) {
-            if (event === "data") handler(Buffer.from(JSON.stringify({ tag_name: "v0.5.11" })));
-            if (event === "end") handler();
-            return this;
+      });
+      const updater = initUpdater(ctx, makeDeps({
+        autoUpdaterFactory: () => ({
+          autoDownload: false,
+          autoInstallOnAppQuit: true,
+          on(event, handler) { handlers[event] = handler; },
+          checkForUpdates: async () => ({ updateInfo: { version: "0.5.11" } }),
+          quitAndInstall() {},
+          downloadUpdate() {
+            return Promise.resolve().then(() => handlers.error(new Error("download exploded")));
           },
-        };
-        cb(res);
-        return { on() { return this; }, setTimeout() {} };
-      },
-    }));
+        }),
+        httpsGetImpl: (options, cb) => {
+          const res = {
+            statusCode: 200,
+            on(event, handler) {
+              if (event === "data") handler(Buffer.from(JSON.stringify({ tag_name: "v0.5.11" })));
+              if (event === "end") handler();
+              return this;
+            },
+          };
+          cb(res);
+          return { on() { return this; }, setTimeout() {} };
+        },
+      }));
 
-    updater.setupAutoUpdater();
-    await updater.checkForUpdates(true);
-    await handlers["update-available"]({ version: "0.5.11" });
-    await Promise.resolve();
-    await Promise.resolve();
+      updater.setupAutoUpdater();
+      await updater.checkForUpdates(true);
+      await handlers["update-available"]({ version: "0.5.11" });
+      await Promise.resolve();
+      await Promise.resolve();
 
-    assert.deepStrictEqual(bubbles.map((bubble) => bubble.mode), ["checking", "available", "downloading", "error"]);
-    assert.match(bubbles[3].detail, /download exploded/);
+      assert.deepStrictEqual(bubbles.map((bubble) => bubble.mode), ["checking", "available", "downloading", "error"]);
+      assert.match(bubbles[3].detail, /download exploded/);
+    } finally {
+      Object.defineProperty(process, "platform", { value: originalPlatform });
+      delete require.cache[require.resolve("../src/updater")];
+      initUpdater = require("../src/updater");
+    }
   });
 
   it("uses the macOS packaged-update path by opening the releases page and showing a success bubble", async () => {

@@ -20,7 +20,7 @@ function initWithConfig(cfg) {
   _shadowStretch = (tc.eyeTracking && tc.eyeTracking.shadowStretch) || 0.15;
   _shadowShift = (tc.eyeTracking && tc.eyeTracking.shadowShift) || 0.3;
   _eyeTrackingStates = (tc.eyeTrackingStates) || ["idle", "dozing", "mini-idle"];
-  _dragSvg = tc.dragSvg || "clawd-react-drag.svg";
+  _dragSvg = tc.dragSvg != null ? tc.dragSvg : "clawd-react-drag.svg";
   _idleFollowSvg = tc.idleFollowSvg || "clawd-idle-follow.svg";
   _glyphFlipDefs = tc.glyphFlips || { "pixel-z": 4, "pixel-z-small": 3 };
 
@@ -306,7 +306,7 @@ function startDragReaction() {
   isDragReacting = true;
   detachEyeTracking();
   window.electronAPI.pauseCursorPolling();
-  swapToFile(_dragSvg, null, false);
+  if (_dragSvg) swapToFile(_dragSvg, null, false);
 }
 
 function endDragReaction() {

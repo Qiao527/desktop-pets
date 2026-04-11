@@ -55,3 +55,10 @@ scripts/*
 
 # Cursor local config (MCP, rules from omc setup)
 .cursor/
+
+# Python virtual environments
+.venv*/
+
+# Local asset cache / downloads (not for distribution)
+.cache/
+downloads/

@@ -182,7 +182,7 @@ function initUpdater(ctx, deps = {}) {
     return showInfoBubble(
       "up-to-date",
       t("updateNotAvailable", "You're Up to Date"),
-      t("updateNotAvailableMsg", "Clawd v{version} is the latest version.").replace("{version}", version),
+      t("updateNotAvailableMsg", "Desktop Pets v{version} is the latest version.").replace("{version}", version),
       {
         version,
         actions: [{ id: "dismiss", label: t("dismiss", "Dismiss"), variant: "secondary" }],
@@ -237,7 +237,7 @@ function initUpdater(ctx, deps = {}) {
       const req = httpsGet({
         hostname: "api.github.com",
         path: "/repos/rullerzhou-afk/clawd-on-desk/releases/latest",
-        headers: { "User-Agent": "Clawd-on-Desk" },
+        headers: { "User-Agent": "Desktop-Pets" },
       }, (res) => {
         let data = "";
         res.on("data", (chunk) => { data += chunk; });
@@ -373,7 +373,7 @@ function initUpdater(ctx, deps = {}) {
 
     await showSuccessBubble({
       title: t("updateReady", "Update Ready"),
-      message: t("gitUpdateRestarting", "Update complete. Restarting Clawd now..."),
+      message: t("gitUpdateRestarting", "Update complete. Restarting Desktop Pets…"),
     });
     await new Promise((resolve) => setTimeout(resolve, 1200));
     hideBubble();
@@ -632,7 +632,7 @@ function initUpdater(ctx, deps = {}) {
           failureType: "Updater Unavailable",
           operation: "Check for Updates",
           reason: "AutoUpdater not available",
-          nextStep: "Restart Clawd or reinstall the packaged app, then try again.",
+          nextStep: "Restart Desktop Pets or reinstall the packaged app, then try again.",
           detail: "AutoUpdater not available",
         });
       }

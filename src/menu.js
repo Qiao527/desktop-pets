@@ -11,7 +11,7 @@ const isLinux = process.platform === "linux";
 const fs = require("fs");
 const os = require("os");
 const AUTOSTART_DIR = path.join(os.homedir(), ".config", "autostart");
-const AUTOSTART_FILE = path.join(AUTOSTART_DIR, "clawd-on-desk.desktop");
+const AUTOSTART_FILE = path.join(AUTOSTART_DIR, "desktop-pets.desktop");
 
 function getLoginItemSettings({ isPackaged, openAtLogin, execPath, appPath }) {
   if (isPackaged) return { openAtLogin };
@@ -36,7 +36,7 @@ function linuxSetOpenAtLogin(enable) {
     const desktop = [
       "[Desktop Entry]",
       "Type=Application",
-      "Name=Clawd on Desk",
+      "Name=Desktop Pets",
       `Exec=${execCmd}`,
       "Hidden=false",
       "NoDisplay=false",
@@ -46,7 +46,7 @@ function linuxSetOpenAtLogin(enable) {
       fs.mkdirSync(AUTOSTART_DIR, { recursive: true });
       fs.writeFileSync(AUTOSTART_FILE, desktop);
     } catch (err) {
-      console.warn("Clawd: failed to write autostart entry:", err.message);
+      console.warn("Desktop Pets: failed to write autostart entry:", err.message);
     }
   } else {
     try { fs.unlinkSync(AUTOSTART_FILE); } catch {}
@@ -61,9 +61,8 @@ const SIZES = {
   L: { width: 360, height: 360 },
 };
 
-// ── Internationalization ──
-const i18n = {
-  en: {
+// ── UI strings (English only) ──
+const STRINGS = {
     size: "Size",
     small: "Small (S)",
     medium: "Medium (M)",
@@ -80,19 +79,18 @@ const i18n = {
     miniMode: "Mini Mode",
     exitMiniMode: "Exit Mini Mode",
     sleep: "Sleep (Do Not Disturb)",
-    wake: "Wake Clawd",
+    wake: "Wake Pet",
     startOnLogin: "Start on Login",
-    startWithClaude: "Start with Claude Code",
+    startWithClaude: "Sync hooks when AI tools start",
     showInMenuBar: "Show in Menu Bar",
     showInDock: "Show in Dock",
-    language: "Language",
     checkForUpdates: "Check for Updates",
     checkingForUpdates: "Checking for Updates…",
     updateAvailable: "Update Available",
     updateAvailableMsg: "v{version} is available. Download and install now?",
     updateAvailableMacMsg: "v{version} is available. Open the download page?",
     updateNotAvailable: "You're Up to Date",
-    updateNotAvailableMsg: "Clawd v{version} is the latest version.",
+    updateNotAvailableMsg: "Desktop Pets v{version} is the latest version.",
     updateDownloading: "Downloading Update…",
     updateReady: "Update Ready",
     updateReadyMsg: "v{version} has been downloaded. Restart now to update?",
@@ -101,7 +99,7 @@ const i18n = {
     updateDirtyMsg: "Local files have been modified. Please commit or stash your changes before updating.",
     updateNow: "Update Now",
     updating: "Updating…",
-    gitUpdateRestarting: "Update complete. Restarting Clawd now...",
+    gitUpdateRestarting: "Update complete. Restarting Desktop Pets…",
     macUpdateOpened: "Opened the latest download page in your browser.",
     restartNow: "Restart Now",
     restartLater: "Later",
@@ -122,79 +120,13 @@ const i18n = {
     sessionMinAgo: "{n}m ago",
     sessionHrAgo: "{n}h ago",
     soundEffects: "Sound Effects",
-    showPet: "Show Clawd",
-    hidePet: "Hide Clawd",
+    showPet: "Show Pet",
+    hidePet: "Hide Pet",
     theme: "Theme",
     openThemeDir: "Open Theme Folder…",
     toggleShortcut: "Toggle Shortcut: {shortcut}",
     quit: "Quit",
-  },
-  zh: {
-    size: "大小",
-    small: "小 (S)",
-    medium: "中 (M)",
-    large: "大 (L)",
-    proportional: "按比例",
-    proportionalPct: "{n}%",
-    proportionalCustom: "自定义…",
-    proportionalCustomTitle: "自定义比例大小",
-    proportionalCustomMsg: "请输入屏幕宽度百分比（1–75）：",
-    sendToDisplay: "发送到显示器",
-    displayLabel: "显示器 {n}",
-    displayLabelPrimary: "显示器 {n}（主屏）",
-    displayResolution: "{w}×{h}",
-    miniMode: "极简模式",
-    exitMiniMode: "退出极简模式",
-    sleep: "休眠（免打扰）",
-    wake: "唤醒 Clawd",
-    startOnLogin: "开机自启",
-    startWithClaude: "随 Claude Code 启动",
-    showInMenuBar: "在菜单栏显示",
-    showInDock: "在 Dock 显示",
-    language: "语言",
-    checkForUpdates: "检查更新",
-    checkingForUpdates: "正在检查更新…",
-    updateAvailable: "发现新版本",
-    updateAvailableMsg: "v{version} 已发布，是否下载并安装？",
-    updateAvailableMacMsg: "v{version} 已发布，是否打开下载页面？",
-    updateNotAvailable: "已是最新版本",
-    updateNotAvailableMsg: "Clawd v{version} 已是最新版本。",
-    updateDownloading: "正在下载更新…",
-    updateReady: "更新就绪",
-    updateReadyMsg: "v{version} 已下载完成，是否立即重启以完成更新？",
-    updateError: "更新失败",
-    updateErrorMsg: "检查更新失败，请稍后再试。",
-    updateDirtyMsg: "本地文件有未提交的修改，请先 commit 或 stash 后再更新。",
-    updateNow: "立即更新",
-    updating: "正在更新…",
-    gitUpdateRestarting: "更新已完成，Clawd 即将重新启动。",
-    macUpdateOpened: "已在浏览器中打开最新下载页面。",
-    restartNow: "立即重启",
-    restartLater: "稍后",
-    download: "下载",
-    dismiss: "关闭",
-    bubbleFollow: "气泡跟随宠物",
-    hideBubbles: "隐藏气泡",
-    showSessionId: "显示会话编号",
-    sessions: "会话",
-    noSessions: "无活跃会话",
-    sessionLocal: "本机",
-    sessionWorking: "工作中",
-    sessionThinking: "思考中",
-    sessionJuggling: "多任务",
-    sessionIdle: "空闲",
-    sessionSleeping: "睡眠",
-    sessionJustNow: "刚刚",
-    sessionMinAgo: "{n}分钟前",
-    sessionHrAgo: "{n}小时前",
-    soundEffects: "音效",
-    showPet: "显示 Clawd",
-    hidePet: "隐藏 Clawd",
-    theme: "主题",
-    openThemeDir: "打开主题文件夹…",
-    toggleShortcut: "切换快捷键: {shortcut}",
-    quit: "退出",
-  },
+    trayTooltipSuffix: "Desk Pet",
 };
 
 const { shell } = require("electron");
@@ -202,15 +134,18 @@ const { shell } = require("electron");
 module.exports = function initMenu(ctx) {
   // ── Translation helper ──
   function t(key) {
-    return (i18n[ctx.lang] || i18n.en)[key] || key;
+    return STRINGS[key] || key;
   }
 
   // ── Theme submenu builder ──
   function buildThemeSubmenu() {
     const themes = ctx.discoverThemes ? ctx.discoverThemes() : [];
-    const activeId = ctx.getActiveThemeId ? ctx.getActiveThemeId() : "clawd";
+    const activeId = ctx.getActiveThemeId ? ctx.getActiveThemeId() : "pochacco-test";
 
-    const items = themes.map(theme => ({
+    const hiddenThemeIds = new Set(["clawd", "calico"]);
+    const items = themes
+      .filter(theme => !hiddenThemeIds.has(theme.id))
+      .map(theme => ({
       label: theme.name + (theme.builtin ? "" : " ✦"),
       type: "radio",
       checked: theme.id === activeId,
@@ -238,13 +173,32 @@ module.exports = function initMenu(ctx) {
     if (ctx.tray) return;
     let icon;
     if (isMac) {
-      icon = nativeImage.createFromPath(path.join(__dirname, "../assets/tray-iconTemplate.png"));
-      icon.setTemplateImage(true);
+      // Electron auto-picks @2x on Retina when using "Template" naming convention
+      const templateBase = path.join(__dirname, "../assets/tray-menubarTemplate.png");
+      icon = nativeImage.createFromPath(templateBase);
+      if (icon.isEmpty()) {
+        // Fallback: try the non-template file with manual resize
+        const custom = path.join(__dirname, "../assets/tray-menubar.png");
+        icon = nativeImage.createFromPath(custom);
+        if (!icon.isEmpty()) {
+          const { width, height } = icon.getSize();
+          const targetH = 22;
+          const targetW = Math.max(1, Math.round(width * (targetH / height)));
+          icon = icon.resize({ width: targetW, height: targetH, quality: "best" });
+        }
+      }
+      if (!icon.isEmpty()) {
+        icon.setTemplateImage(true);
+      } else {
+        icon = nativeImage.createFromPath(path.join(__dirname, "../assets/tray-iconTemplate.png"));
+        icon.setTemplateImage(true);
+      }
     } else {
       icon = nativeImage.createFromPath(path.join(__dirname, "../assets/tray-icon.png")).resize({ width: 32, height: 32 });
     }
     ctx.tray = new Tray(icon);
-    ctx.tray.setToolTip("Clawd Desktop Pet");
+    const tipName = ctx.getActiveThemeName ? ctx.getActiveThemeName() : "Desktop Pets";
+    ctx.tray.setToolTip(`${tipName} — ${t("trayTooltipSuffix")}`);
     buildTrayMenu();
   }
 
@@ -293,34 +247,39 @@ module.exports = function initMenu(ctx) {
 
   function buildTrayMenu() {
     if (!ctx.tray) return;
+    const tipName = ctx.getActiveThemeName ? ctx.getActiveThemeName() : "Desktop Pets";
+    ctx.tray.setToolTip(`${tipName} — ${t("trayTooltipSuffix")}`);
+    const agentOn = ctx.agentSessionReactive !== false;
     const items = [
       {
         label: ctx.doNotDisturb ? t("wake") : t("sleep"),
         click: () => ctx.doNotDisturb ? ctx.disableDoNotDisturb() : ctx.enableDoNotDisturb(),
       },
-      {
-        label: t("bubbleFollow"),
-        type: "checkbox",
-        checked: ctx.bubbleFollowPet,
-        click: (menuItem) => {
-          ctx.bubbleFollowPet = menuItem.checked;
-          ctx.repositionBubbles();
-          buildContextMenu();
-          buildTrayMenu();
-          ctx.savePrefs();
+      ...(agentOn ? [
+        {
+          label: t("bubbleFollow"),
+          type: "checkbox",
+          checked: ctx.bubbleFollowPet,
+          click: (menuItem) => {
+            ctx.bubbleFollowPet = menuItem.checked;
+            ctx.repositionBubbles();
+            buildContextMenu();
+            buildTrayMenu();
+            ctx.savePrefs();
+          },
         },
-      },
-      {
-        label: t("hideBubbles"),
-        type: "checkbox",
-        checked: ctx.hideBubbles,
-        click: (menuItem) => {
-          ctx.hideBubbles = menuItem.checked;
-          buildContextMenu();
-          buildTrayMenu();
-          ctx.savePrefs();
+        {
+          label: t("hideBubbles"),
+          type: "checkbox",
+          checked: ctx.hideBubbles,
+          click: (menuItem) => {
+            ctx.hideBubbles = menuItem.checked;
+            buildContextMenu();
+            buildTrayMenu();
+            ctx.savePrefs();
+          },
         },
-      },
+      ] : []),
       {
         label: t("soundEffects"),
         type: "checkbox",
@@ -332,7 +291,7 @@ module.exports = function initMenu(ctx) {
           ctx.savePrefs();
         },
       },
-      {
+      ...(agentOn ? [{
         label: t("showSessionId"),
         type: "checkbox",
         checked: ctx.showSessionId,
@@ -342,7 +301,7 @@ module.exports = function initMenu(ctx) {
           buildTrayMenu();
           ctx.savePrefs();
         },
-      },
+      }] : []),
       { type: "separator" },
       {
         label: t("theme"),
@@ -372,7 +331,7 @@ module.exports = function initMenu(ctx) {
           buildContextMenu();
         },
       },
-      {
+      ...(agentOn ? [{
         label: t("startWithClaude"),
         type: "checkbox",
         checked: ctx.autoStartWithClaude,
@@ -386,13 +345,13 @@ module.exports = function initMenu(ctx) {
               unregisterAutoStart();
             }
           } catch (err) {
-            console.warn("Clawd: failed to toggle auto-start hook:", err.message);
+            console.warn("Desktop Pets: failed to toggle auto-start hook:", err.message);
           }
           ctx.savePrefs();
           buildTrayMenu();
           buildContextMenu();
         },
-      },
+      }] : []),
     ];
     // macOS: Dock and Menu Bar visibility toggles
     if (isMac) {
@@ -417,14 +376,6 @@ module.exports = function initMenu(ctx) {
     items.push(
       { type: "separator" },
       ctx.getUpdateMenuItem(),
-      { type: "separator" },
-      {
-        label: t("language"),
-        submenu: [
-          { label: "English", type: "radio", checked: ctx.lang === "en", click: () => setLanguage("en") },
-          { label: "中文", type: "radio", checked: ctx.lang === "zh", click: () => setLanguage("zh") },
-        ],
-      },
       { type: "separator" },
       {
         label: ctx.petHidden ? t("showPet") : t("hidePet"),
@@ -659,11 +610,11 @@ module.exports = function initMenu(ctx) {
         click: () => ctx.doNotDisturb ? ctx.disableDoNotDisturb() : ctx.enableDoNotDisturb(),
       },
       { type: "separator" },
-      {
+      ...(ctx.agentSessionReactive !== false ? [{
         label: `${t("sessions")} (${ctx.sessions.size})`,
         submenu: ctx.buildSessionSubmenu(),
       },
-      { type: "separator" },
+      { type: "separator" }] : []),
       {
         label: t("theme"),
         submenu: buildThemeSubmenu(),
@@ -707,12 +658,6 @@ module.exports = function initMenu(ctx) {
     popupMenuAt(ctx.contextMenu);
   }
 
-  function setLanguage(newLang) {
-    ctx.lang = newLang;
-    rebuildAllMenus();
-    ctx.savePrefs();
-  }
-
   function resizeWindow(sizeKey) {
     ctx.currentSize = sizeKey;
     const size = SIZES[sizeKey] || ctx.getCurrentPixelSize();
@@ -742,7 +687,6 @@ module.exports = function initMenu(ctx) {
     ensureContextMenuOwner,
     popupMenuAt,
     showPetContextMenu,
-    setLanguage,
     resizeWindow,
     requestAppQuit,
   };

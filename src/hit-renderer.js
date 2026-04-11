@@ -107,10 +107,30 @@ function stopDrag() {
     window.hitAPI.moveWindowBy(pendingDx, pendingDy);
     pendingDx = 0; pendingDy = 0;
   }
-  if (didDrag) {
+  const landed = didDrag;
+  if (landed) {
     window.hitAPI.dragEnd();
   }
   endDragReaction();
+  if (landed && !dndEnabled && isPetInteractState(currentState)) {
+    const land = _getReaction("dragLand");
+    if (land) {
+      const f = land.file || (land.files && land.files[0]);
+      const delay = land.delay || 0;
+      const dur = land.duration || 2000;
+      if (f) {
+        if (delay > 0) {
+          setTimeout(() => {
+            if (!isReacting && !isDragReacting && isPetInteractState(currentState)) {
+              playReaction(f, dur);
+            }
+          }, delay);
+        } else {
+          playReaction(f, dur);
+        }
+      }
+    }
+  }
 }
 
 document.addEventListener("pointerup", (e) => {
@@ -142,6 +162,10 @@ function _getReaction(name) {
   return _reactions[name] || null;
 }
 
+function isPetInteractState(st) {
+  return st === "idle" || st === "idle2" || st === "typing" || st === "listening";
+}
+
 function handleClick(clientX) {
   if (miniMode) {
     window.hitAPI.exitMiniMode();
@@ -149,8 +173,8 @@ function handleClick(clientX) {
   }
   if (isReacting || isDragReacting) return;
 
-  // Non-idle: focus terminal, no reaction
-  if (currentState !== "idle") {
+  // Non-idle (agent states): focus terminal, no reaction
+  if (!isPetInteractState(currentState)) {
     window.hitAPI.focusTerminal();
     return;
   }
@@ -193,7 +217,14 @@ function handleClick(clientX) {
     clickTimer = setTimeout(() => {
       clickTimer = null;
       clickCount = 0;
+      const dir = firstClickDir;
       firstClickDir = null;
+      const leftReact2 = _getReaction("clickLeft");
+      const rightReact2 = _getReaction("clickRight");
+      if (leftReact2 && rightReact2) {
+        const react = dir === "left" ? leftReact2 : rightReact2;
+        playReaction(react.file, react.duration || 2000);
+      }
     }, CLICK_WINDOW_MS);
   }
 }

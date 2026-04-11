@@ -199,6 +199,19 @@ function startHttpServer() {
           const headless = data.headless === true;
           if (ctx.STATE_SVGS[state]) {
             const sid = session_id || "default";
+            const agentReactive = ctx.agentSessionReactive !== false;
+            if (!agentReactive) {
+              if (event !== "PermissionRequest") {
+                res.writeHead(200, { [CLAWD_SERVER_HEADER]: CLAWD_SERVER_ID });
+                res.end("ok");
+                return;
+              }
+              if (svg) {
+                res.writeHead(200, { [CLAWD_SERVER_HEADER]: CLAWD_SERVER_ID });
+                res.end("ok");
+                return;
+              }
+            }
             if (state.startsWith("mini-") && !svg) {
               res.writeHead(400);
               res.end("mini states require svg override");
@@ -223,6 +236,37 @@ function startHttpServer() {
             res.writeHead(400);
             res.end("unknown state");
           }
+        } catch {
+          res.writeHead(400);
+          res.end("bad json");
+        }
+      });
+    } else if (req.method === "POST" && req.url === "/notify") {
+      let body = "";
+      let bodySize = 0;
+      let tooLarge = false;
+      req.on("data", (chunk) => {
+        if (tooLarge) return;
+        bodySize += chunk.length;
+        if (bodySize > 1024) { tooLarge = true; return; }
+        body += chunk;
+      });
+      req.on("end", () => {
+        if (tooLarge) {
+          res.writeHead(413);
+          res.end("notify payload too large");
+          return;
+        }
+        try {
+          const data = body ? JSON.parse(body) : {};
+          const svg = typeof data.svg === "string" ? path.basename(data.svg) : null;
+          if (svg) {
+            ctx.applyState("notification", svg);
+          } else {
+            ctx.applyState("notification");
+          }
+          res.writeHead(200, { [CLAWD_SERVER_HEADER]: CLAWD_SERVER_ID });
+          res.end("ok");
         } catch {
           res.writeHead(400);
           res.end("bad json");

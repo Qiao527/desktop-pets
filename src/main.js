@@ -8,6 +8,7 @@ const { findNearestWorkArea, computeLooseClamp, SYNTHETIC_WORK_AREA } = require(
 // ── Autoplay policy: allow sound playback without user gesture ──
 // MUST be set before any BrowserWindow is created (before app.whenReady)
 app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
+app.setName("Desktop Pets");
 
 const isMac = process.platform === "darwin";
 const isLinux = process.platform === "linux";
@@ -23,7 +24,7 @@ if (isWin) {
     const user32 = koffi.load("user32.dll");
     _allowSetForeground = user32.func("bool __stdcall AllowSetForegroundWindow(int dwProcessId)");
   } catch (err) {
-    console.warn("Clawd: koffi/AllowSetForegroundWindow not available:", err.message);
+    console.warn("Desktop Pets: koffi/AllowSetForegroundWindow not available:", err.message);
   }
 }
 
@@ -38,12 +39,46 @@ const SIZES = {
 let lang = "en";
 
 // ── Position persistence ──
-const PREFS_PATH = path.join(app.getPath("userData"), "clawd-prefs.json");
+const PREFS_PATH = path.join(app.getPath("userData"), "desktop-pets-prefs.json");
+let desktopPetMode = true;
+let agentSessionReactive = false;
+
+function legacyPrefsPaths() {
+  const home = app.getPath("home");
+  if (isMac) {
+    return [
+      path.join(home, "Library/Application Support/clawd-on-desk/clawd-prefs.json"),
+      path.join(home, "Library/Application Support/Clawd on Desk/clawd-prefs.json"),
+    ];
+  }
+  if (isWin) {
+    return [path.join(app.getPath("appData"), "clawd-on-desk", "clawd-prefs.json")];
+  }
+  return [];
+}
+
+function migrateLegacyPrefsIfNeeded() {
+  try {
+    if (fs.existsSync(PREFS_PATH)) return;
+    for (const legacy of legacyPrefsPaths()) {
+      if (fs.existsSync(legacy)) {
+        fs.copyFileSync(legacy, PREFS_PATH);
+        return;
+      }
+    }
+  } catch (err) {
+    console.warn("Desktop Pets: legacy prefs migration skipped:", err.message);
+  }
+}
+
+migrateLegacyPrefsIfNeeded();
 
 function loadPrefs() {
   try {
     const raw = JSON.parse(fs.readFileSync(PREFS_PATH, "utf8"));
     if (!raw || typeof raw !== "object") return null;
+    if (typeof raw.desktopPetMode !== "boolean") raw.desktopPetMode = true;
+    if (typeof raw.agentSessionReactive !== "boolean") raw.agentSessionReactive = false;
     // Validate miniEdge allowlist
     if (raw.miniEdge !== "left" && raw.miniEdge !== "right") raw.miniEdge = "right";
     // Sanitize numeric fields — corrupted JSON can feed NaN into window positioning
@@ -63,10 +98,12 @@ function savePrefs() {
   const { x, y } = win.getBounds();
   const data = {
     x, y, size: currentSize,
-    miniMode: _mini.getMiniMode(), miniEdge: _mini.getMiniEdge(), preMiniX: _mini.getPreMiniX(), preMiniY: _mini.getPreMiniY(), lang,
+    miniMode: _mini.getMiniMode(), miniEdge: _mini.getMiniEdge(), preMiniX: _mini.getPreMiniX(), preMiniY: _mini.getPreMiniY(), lang: "en",
     showTray, showDock,
     autoStartWithClaude, bubbleFollowPet, hideBubbles, showSessionId, soundMuted,
-    theme: activeTheme ? activeTheme._id : "clawd",
+    desktopPetMode,
+    agentSessionReactive,
+    theme: activeTheme ? activeTheme._id : "pochacco-test",
   };
   try { fs.writeFileSync(PREFS_PATH, JSON.stringify(data)); } catch {}
 }
@@ -79,9 +116,19 @@ const themeLoader = require("./theme-loader");
 themeLoader.init(__dirname, app.getPath("userData"));
 
 function loadThemeFromPrefs(prefs) {
-  return themeLoader.loadTheme((prefs && prefs.theme) || "clawd");
+  const t = prefs && prefs.theme;
+  // Treat built-in defaults as replaced by pochacco-test
+  const desired = (!t || t === "clawd" || t === "calico") ? "pochacco-test" : t;
+  return themeLoader.loadTheme(desired);
 }
-let activeTheme = loadThemeFromPrefs(loadPrefs());
+const _initialPrefs = loadPrefs();
+if (_initialPrefs && typeof _initialPrefs.desktopPetMode === "boolean") {
+  desktopPetMode = _initialPrefs.desktopPetMode;
+}
+if (_initialPrefs && typeof _initialPrefs.agentSessionReactive === "boolean") {
+  agentSessionReactive = _initialPrefs.agentSessionReactive;
+}
+let activeTheme = loadThemeFromPrefs(_initialPrefs);
 
 // ── CSS <object> sizing (from theme) ──
 function getObjRect(bounds) {
@@ -173,7 +220,7 @@ function registerToggleShortcut() {
   try {
     globalShortcut.register(DEFAULT_TOGGLE_SHORTCUT, togglePetVisibility);
   } catch (err) {
-    console.warn("Clawd: failed to register global shortcut:", err.message);
+    console.warn("Desktop Pets: failed to register global shortcut:", err.message);
   }
 }
 
@@ -368,6 +415,7 @@ const _stateCtx = {
   get theme() { return activeTheme; },
   get win() { return win; },
   get hitWin() { return hitWin; },
+  get agentSessionReactive() { return agentSessionReactive; },
   get doNotDisturb() { return doNotDisturb; },
   set doNotDisturb(v) { doNotDisturb = v; },
   get miniMode() { return _mini.getMiniMode(); },
@@ -428,6 +476,9 @@ const _tickCtx = {
   get win() { return win; },
   get currentState() { return _state.getCurrentState(); },
   get currentSvg() { return _state.getCurrentSvg(); },
+  get sessions() { return sessions; },
+  get desktopPetMode() { return desktopPetMode; },
+  get doNotDisturb() { return doNotDisturb; },
   get miniMode() { return _mini.getMiniMode(); },
   get miniTransitioning() { return _mini.getMiniTransitioning(); },
   get dragLocked() { return dragLocked; },
@@ -462,6 +513,7 @@ const { initFocusHelper, killFocusHelper, focusTerminalWindow, clearMacFocusCool
 // ── HTTP server — delegated to src/server.js ──
 const _serverCtx = {
   get autoStartWithClaude() { return autoStartWithClaude; },
+  get agentSessionReactive() { return agentSessionReactive; },
   get doNotDisturb() { return doNotDisturb; },
   get hideBubbles() { return hideBubbles; },
   get pendingPermissions() { return pendingPermissions; },
@@ -469,6 +521,7 @@ const _serverCtx = {
   get STATE_SVGS() { return _state.STATE_SVGS; },
   get sessions() { return sessions; },
   setState,
+  applyState,
   updateSession,
   resolvePermissionEntry,
   sendPermissionResponse,
@@ -562,7 +615,7 @@ const _menuCtx = {
   set currentSize(v) { currentSize = v; },
   get doNotDisturb() { return doNotDisturb; },
   get lang() { return lang; },
-  set lang(v) { lang = v; },
+  set lang(_v) { lang = "en"; },
   get showTray() { return showTray; },
   set showTray(v) { showTray = v; },
   get showDock() { return showDock; },
@@ -613,7 +666,9 @@ const _menuCtx = {
   reapplyMacVisibility,
   switchTheme: (id) => switchTheme(id),
   discoverThemes: () => themeLoader.discoverThemes(),
-  getActiveThemeId: () => activeTheme ? activeTheme._id : "clawd",
+  getActiveThemeId: () => activeTheme ? activeTheme._id : "pochacco-test",
+  getActiveThemeName: () => (activeTheme && activeTheme.name) || "Desktop Pets",
+  get agentSessionReactive() { return agentSessionReactive; },
   ensureUserThemesDir: () => themeLoader.ensureUserThemesDir(),
 };
 const _menu = require("./menu")(_menuCtx);
@@ -649,7 +704,7 @@ function createWindow() {
     const ratio = Math.round(px / wa.width * 100);
     currentSize = `P:${Math.max(1, Math.min(75, ratio))}`;
   }
-  if (prefs && (prefs.lang === "en" || prefs.lang === "zh")) lang = prefs.lang;
+  lang = "en";
   // macOS: restore tray/dock visibility from prefs
   if (isMac && prefs) {
     if (typeof prefs.showTray === "boolean") showTray = prefs.showTray;
@@ -660,6 +715,8 @@ function createWindow() {
   if (prefs && typeof prefs.hideBubbles === "boolean") hideBubbles = prefs.hideBubbles;
   if (prefs && typeof prefs.showSessionId === "boolean") showSessionId = prefs.showSessionId;
   if (prefs && typeof prefs.soundMuted === "boolean") soundMuted = prefs.soundMuted;
+  if (prefs && typeof prefs.desktopPetMode === "boolean") desktopPetMode = prefs.desktopPetMode;
+  if (prefs && typeof prefs.agentSessionReactive === "boolean") agentSessionReactive = prefs.agentSessionReactive;
   // macOS: apply dock visibility (default hidden)
   if (isMac) {
     applyDockVisibility();
@@ -721,7 +778,7 @@ function createWindow() {
     });
     win.on("unresponsive", () => {
       if (isQuitting) return;
-      console.warn("Clawd: renderer unresponsive — reloading");
+      console.warn("Desktop Pets: renderer unresponsive — reloading");
       win.webContents.reload();
     });
   }
@@ -867,6 +924,7 @@ function createWindow() {
         syncHitWin();
         repositionUpdateBubble();
       }
+      savePrefs();
     }
   });
 
@@ -1090,7 +1148,7 @@ function installTerminalFocusExtension() {
   extSrc = extSrc.replace("app.asar" + path.sep, "app.asar.unpacked" + path.sep);
 
   if (!fs.existsSync(extSrc)) {
-    console.log("Clawd: terminal-focus extension source not found, skipping auto-install");
+    console.log("Desktop Pets: terminal-focus extension source not found, skipping auto-install");
     return;
   }
 
@@ -1113,13 +1171,13 @@ function installTerminalFocusExtension() {
         fs.copyFileSync(path.join(extSrc, file), path.join(dest, file));
       }
       installed++;
-      console.log(`Clawd: installed terminal-focus extension to ${dest}`);
+      console.log(`Desktop Pets: installed terminal-focus extension to ${dest}`);
     } catch (err) {
-      console.warn(`Clawd: failed to install extension to ${dest}:`, err.message);
+      console.warn(`Desktop Pets: failed to install extension to ${dest}:`, err.message);
     }
   }
   if (installed > 0) {
-    console.log(`Clawd: terminal-focus extension installed to ${installed} editor(s). Restart VS Code/Cursor to activate.`);
+    console.log(`Desktop Pets: terminal-focus extension installed to ${installed} editor(s). Restart VS Code/Cursor to activate.`);
   }
 }
 
@@ -1162,6 +1220,7 @@ if (!gotTheLock) {
       const CodexLogMonitor = require("../agents/codex-log-monitor");
       const codexAgent = require("../agents/codex");
       _codexMonitor = new CodexLogMonitor(codexAgent, (sid, state, event, extra) => {
+        if (!agentSessionReactive) return;
         if (state === "codex-permission") {
           updateSession(sid, "notification", event, null, extra.cwd, null, null, null, "codex");
           showCodexNotifyBubble({
@@ -1176,7 +1235,7 @@ if (!gotTheLock) {
       });
       _codexMonitor.start();
     } catch (err) {
-      console.warn("Clawd: Codex log monitor not started:", err.message);
+      console.warn("Desktop Pets: Codex log monitor not started:", err.message);
     }
 
     // Start Gemini CLI session JSON monitor
@@ -1184,16 +1243,17 @@ if (!gotTheLock) {
       const GeminiLogMonitor = require("../agents/gemini-log-monitor");
       const geminiAgent = require("../agents/gemini-cli");
       _geminiMonitor = new GeminiLogMonitor(geminiAgent, (sid, state, event, extra) => {
+        if (!agentSessionReactive) return;
         updateSession(sid, state, event, null, extra.cwd, null, null, null, "gemini-cli");
       });
       _geminiMonitor.start();
     } catch (err) {
-      console.warn("Clawd: Gemini log monitor not started:", err.message);
+      console.warn("Desktop Pets: Gemini log monitor not started:", err.message);
     }
 
     // Auto-install VS Code/Cursor terminal-focus extension
     try { installTerminalFocusExtension(); } catch (err) {
-      console.warn("Clawd: failed to auto-install terminal-focus extension:", err.message);
+      console.warn("Desktop Pets: failed to auto-install terminal-focus extension:", err.message);
     }
 
     // Auto-updater: setup event handlers (user triggers check via tray menu)

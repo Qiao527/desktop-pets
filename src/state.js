@@ -40,7 +40,12 @@ const SLEEP_SEQUENCE = new Set(["yawning", "dozing", "collapsing", "sleeping", "
 
 const STATE_PRIORITY = {
   error: 8, notification: 7, sweeping: 6, attention: 5,
-  carrying: 4, juggling: 4, working: 3, thinking: 2, idle: 1, sleeping: 0,
+  carrying: 4, juggling: 4, working: 3, thinking: 2,
+  hover: 1.5,
+  typing: 1.42,
+  listening: 1.35,
+  idle2: 1.25,
+  idle: 1, sleeping: 0,
 };
 
 const ONESHOT_STATES = new Set(["attention", "error", "sweeping", "notification", "carrying"]);
@@ -101,6 +106,19 @@ function refreshTheme() {
   theme = ctx.theme;
   SVG_IDLE_FOLLOW = theme.states.idle[0];
   STATE_SVGS = { ...theme.states };
+  // Optional generic states: hover / idle2 — if omitted, fall back to idle assets
+  if (!STATE_SVGS.hover || !STATE_SVGS.hover.length) {
+    STATE_SVGS.hover = STATE_SVGS.idle;
+  }
+  if (!STATE_SVGS.idle2 || !STATE_SVGS.idle2.length) {
+    STATE_SVGS.idle2 = STATE_SVGS.idle;
+  }
+  if (!STATE_SVGS.typing || !STATE_SVGS.typing.length) {
+    STATE_SVGS.typing = STATE_SVGS.idle;
+  }
+  if (!STATE_SVGS.listening || !STATE_SVGS.listening.length) {
+    STATE_SVGS.listening = STATE_SVGS.idle;
+  }
   if (theme.miniMode && theme.miniMode.states) {
     Object.assign(STATE_SVGS, theme.miniMode.states);
   }
@@ -334,6 +352,17 @@ function pickDisplayHint(state, existing, incoming) {
 
 // ── Session management ──
 function updateSession(sessionId, state, event, sourcePid, cwd, editor, pidChain, agentPid, agentId, host, headless, displayHint) {
+  if (ctx.agentSessionReactive === false) {
+    if (startupRecoveryActive) {
+      startupRecoveryActive = false;
+      if (startupRecoveryTimer) { clearTimeout(startupRecoveryTimer); startupRecoveryTimer = null; }
+    }
+    if (event === "PermissionRequest") {
+      setState("notification");
+    }
+    return;
+  }
+
   if (startupRecoveryActive) {
     startupRecoveryActive = false;
     if (startupRecoveryTimer) { clearTimeout(startupRecoveryTimer); startupRecoveryTimer = null; }

@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "name": "Pochacco Test",
+  "author": "",
+  "version": "0.2.0",
+  "description": "Pochacco animated WebP theme.",
+  "license": "MIT",
+
+  "viewBox": { "x": -15, "y": -25, "width": 45, "height": 45 },
+
+  "layout": {
+    "contentBox": { "x": -4, "y": -3, "width": 23, "height": 20 },
+    "centerX": 7.5,
+    "baselineY": 17,
+    "visibleHeightRatio": 0.34,
+    "baselineBottomRatio": 0.05
+  },
+
+  "eyeTracking": {
+    "enabled": false,
+    "states": []
+  },
+
+  "states": {
+    "idle": ["idle-follow.webp"],
+    "idle2": ["idle2.webp"],
+    "typing": ["pet-typing.webp"],
+    "listening": ["listening.webp"],
+    "hover": ["idle-follow.webp"],
+    "yawning": ["yawning.webp"],
+    "dozing": ["pet-sleeping.webp"],
+    "collapsing": ["pet-sleeping.webp"],
+    "thinking": ["thinking.webp"],
+    "working": ["working.webp"],
+    "juggling": ["working.webp"],
+    "sweeping": ["working.webp"],
+    "error": ["thinking.webp"],
+    "attention": ["reaction-drag-land.webp"],
+    "notification": ["reaction-drag-land.webp"],
+    "carrying": ["working.webp"],
+    "sleeping": ["pet-sleeping.webp"],
+    "waking": ["pet-waking.webp"]
+  },
+
+  "workingTiers": [
+    { "minSessions": 3, "file": "working.webp" },
+    { "minSessions": 2, "file": "working.webp" },
+    { "minSessions": 1, "file": "working.webp" }
+  ],
+
+  "jugglingTiers": [
+    { "minSessions": 2, "file": "working.webp" },
+    { "minSessions": 1, "file": "working.webp" }
+  ],
+
+  "idleAnimations": [
+    { "file": "pet-idle-look.webp", "duration": 8000 }
+  ],
+
+  "displayHintMap": {
+    "clawd-working-building.svg": "working.webp",
+    "clawd-working-typing.svg": "pet-typing.webp",
+    "clawd-working-juggling.svg": "working.webp",
+    "clawd-working-conducting.svg": "working.webp",
+    "clawd-idle-reading.svg": "idle-follow.webp",
+    "clawd-working-debugger.svg": "thinking.webp",
+    "clawd-working-thinking.svg": "thinking.webp"
+  },
+
+  "timings": {
+    "yawnDuration": 3000,
+    "wakeDuration": 1500,
+    "collapseDuration": 800,
+    "mouseIdleTimeout": 45000,
+    "mouseSleepTimeout": 120000
+  },
+
+  "hitBoxes": {
+    "default": { "x": -6, "y": -5, "w": 27, "h": 23 },
+    "sleeping": { "x": -2, "y": 9, "w": 19, "h": 7 },
+    "wide": { "x": -3, "y": 3, "w": 21, "h": 14 }
+  },
+
+  "reactions": {
+    "drag": {},
+    "clickLeft": { "file": "reaction-click.webp", "duration": 2000 },
+    "clickRight": { "file": "reaction-click.webp", "duration": 2000 },
+    "annoyed": { "file": "reaction-multi.webp", "duration": 2500 },
+    "double": { "files": ["reaction-multi.webp"], "duration": 2800 },
+    "dragLand": { "file": "reaction-drag-land.webp", "duration": 2000, "delay": 500 }
+  },
+
+  "transitions": {
+    "idle-follow.webp": { "in": 300, "out": 300 },
+    "idle2.webp": { "in": 300, "out": 300 },
+    "pet-sleeping.webp": { "in": 500, "out": 400 },
+    "pet-waking.webp": { "in": 200, "out": 300 },
+    "pet-idle-look.webp": { "in": 300, "out": 300 }
+  },
+
+  "miniMode": {
+    "supported": false
+  }
+}
