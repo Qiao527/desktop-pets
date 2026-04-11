@@ -20,7 +20,7 @@
     "macos",
     "menubar"
   ],
-  "author": "rullerzhou-afk",
+  "author": "Qiao527",
   "license": "MIT",
   "type": "commonjs",
   "build": {
@@ -56,7 +56,7 @@
       ]
     },
     "linux": {
-      "maintainer": "rullerzhou-afk <rullerzhou-afk@users.noreply.github.com>",
+      "maintainer": "Qiao527 <Qiao527@users.noreply.github.com>",
       "icon": "assets/icons",
       "category": "Utility",
       "target": [
@@ -107,8 +107,8 @@
     "publish": [
       {
         "provider": "github",
-        "owner": "rullerzhou-afk",
-        "repo": "clawd-on-desk"
+        "owner": "Qiao527",
+        "repo": "desktop-pets"
       }
     ]
   },

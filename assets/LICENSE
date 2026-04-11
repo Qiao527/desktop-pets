@@ -1,21 +1,19 @@
 All Rights Reserved
 
 The artwork files in this directory and its subdirectories (including but not
-limited to SVG, PNG, GIF, and ICO files) are NOT covered by the project's
-MIT license. All rights are reserved by their respective copyright holders.
+limited to SVG, PNG, GIF, WebP, and ICO files) are NOT covered by the project's
+MIT license.
 
-Clawd character artwork:
+Pochacco character:
+  Pochacco is the property of Sanrio Co., Ltd.
+  Sticker assets used in this project are for personal, non-commercial use only.
+  This is an unofficial fan project, not affiliated with or endorsed by Sanrio.
+
+Original Clawd pixel art:
   The Clawd character is the property of Anthropic (https://www.anthropic.com).
-  Clawd pixel art in this project is fan-created and may not be used for
-  commercial purposes.
-
-Calico cat (三花猫) artwork:
-  Copyright (c) 2026 鹿鹿 (rullerzhou-afk). All rights reserved.
-
-Third-party artist contributions:
-  Copyright is retained by the respective artists. See individual file headers
-  or the project README for attribution details.
+  Clawd pixel art in this project is fan-created, from the upstream
+  clawd-on-desk project by rullerzhou-afk.
 
 You may NOT copy, modify, distribute, or use any artwork from this directory
-without explicit written permission from the copyright holder(s), except for
-personal use of the Clawd on Desk application as distributed by this project.
+for commercial purposes without explicit written permission from the respective
+copyright holder(s).
