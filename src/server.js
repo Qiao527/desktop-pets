@@ -14,6 +14,7 @@ const {
   readRuntimePort,
   writeRuntimeConfig,
 } = require("../hooks/server-config");
+const { validateOpencodeBridgeBaseUrl } = require("./opencode-bridge-url");
 
 module.exports = function initServer(ctx) {
 
@@ -335,6 +336,10 @@ function startHttpServer() {
             if (!requestId || !bridgeUrl || !bridgeToken) {
               const missing = !requestId ? "request_id" : (!bridgeUrl ? "bridge_url" : "bridge_token");
               ctx.permLog(`SKIPPED opencode perm: missing ${missing}`);
+              return;
+            }
+            if (!validateOpencodeBridgeBaseUrl(bridgeUrl).ok) {
+              ctx.permLog("SKIPPED opencode perm: bridge_url not a safe loopback URL");
               return;
             }
 

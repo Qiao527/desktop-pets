@@ -8,6 +8,7 @@ const {
   CLAWD_SERVER_HEADER,
   CLAWD_SERVER_ID,
 } = require("../hooks/server-config");
+const { bridgeReplyUrl } = require("./opencode-bridge-url");
 
 const isMac = process.platform === "darwin";
 const isLinux = process.platform === "linux";
@@ -417,44 +418,43 @@ function permLog(msg) {
 //   { "request_id": "per_xxx", "reply": "once" | "always" | "reject" }
 //
 // Uses raw http.request (not fetch) to avoid Electron main-process fetch
-// polyfill concerns. Bridge is always 127.0.0.1 bound by the plugin so no
-// IPv4/IPv6 gotcha. 5s timeout — on failure the opencode TUI still falls
-// back to terminal-based approval.
+// polyfill concerns. Bridge must be loopback-only (validated in bridgeReplyUrl).
+// 5s timeout — on failure the opencode TUI still falls back to terminal-based approval.
 function replyOpencodePermission({ bridgeUrl, bridgeToken, requestId, reply, toolName }) {
   if (!bridgeUrl || !bridgeToken || !requestId) {
     const missing = !bridgeUrl ? "bridgeUrl" : (!bridgeToken ? "bridgeToken" : "requestId");
     permLog(`opencode reply skipped: missing ${missing}`);
     return;
   }
-  const fullUrl = `${bridgeUrl.replace(/\/$/, "")}/reply`;
-  permLog(`opencode reply: tool=${toolName || "?"} request=${requestId} reply=${reply} url=${fullUrl}`);
-
-  let parsed;
-  try { parsed = new URL(fullUrl); } catch {
-    permLog(`opencode reply skipped: invalid bridge URL ${fullUrl}`);
+  const urlCheck = bridgeReplyUrl(bridgeUrl);
+  if (!urlCheck.ok) {
+    permLog(`opencode reply skipped: ${urlCheck.reason} bridge=${bridgeUrl}`);
     return;
   }
+  const parsed = urlCheck.parsed;
+  permLog(`opencode reply: tool=${toolName || "?"} request=${requestId} reply=${reply} url=${parsed.href}`);
+
   const body = JSON.stringify({ request_id: requestId, reply });
-  const req = http.request({
-    hostname: parsed.hostname,
-    port: parsed.port || 80,
-    path: parsed.pathname + parsed.search,
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Content-Length": Buffer.byteLength(body),
-      Authorization: `Bearer ${bridgeToken}`,
+  const req = http.request(
+    parsed,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Content-Length": Buffer.byteLength(body),
+        Authorization: `Bearer ${bridgeToken}`,
+      },
+      timeout: 5000,
     },
-    timeout: 5000,
-    family: 4,
-  }, (res) => {
-    let respBody = "";
-    res.setEncoding("utf8");
-    res.on("data", (chunk) => { if (respBody.length < 500) respBody += chunk; });
-    res.on("end", () => {
-      permLog(`opencode reply status=${res.statusCode} request=${requestId} body=${respBody.trim() || "(empty)"}`);
-    });
-  });
+    (res) => {
+      let respBody = "";
+      res.setEncoding("utf8");
+      res.on("data", (chunk) => { if (respBody.length < 500) respBody += chunk; });
+      res.on("end", () => {
+        permLog(`opencode reply status=${res.statusCode} request=${requestId} body=${respBody.trim() || "(empty)"}`);
+      });
+    },
+  );
   req.on("error", (err) => {
     const info = err
       ? `code=${err.code || ""} errno=${err.errno || ""} syscall=${err.syscall || ""} msg=${err.message || ""}`
