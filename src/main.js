@@ -1219,7 +1219,15 @@ if (!gotTheLock) {
   }
 
   app.whenReady().then(() => {
-    _perfLog = require("./diagnostics/perf-log").startPerfLog({ label: process.env.DESKTOP_PETS_PERF_LABEL || "" });
+    _perfLog = require("./diagnostics/perf-log").startPerfLog({
+      label: process.env.DESKTOP_PETS_PERF_LABEL || "",
+      extra: () => ({
+        detectors: activityEngine.getHealth().map((h) => ({
+          name: h.name, status: h.status, runs: h.totalRuns, failures: h.totalFailures,
+          timeouts: h.totalTimeouts, lastErrorKind: h.lastErrorKind, latencyMs: h.latencyMs,
+        })),
+      }),
+    });
     activityEngine.start();
     permDebugLog = path.join(app.getPath("userData"), "permission-debug.log");
     updateDebugLog = path.join(app.getPath("userData"), "update-debug.log");

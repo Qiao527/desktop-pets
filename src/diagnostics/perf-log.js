@@ -13,7 +13,7 @@ function round(n) {
   return Math.round(n * 100) / 100;
 }
 
-function startPerfLog({ file = process.env.DESKTOP_PETS_PERF_LOG, intervalMs = 10000, label = "" } = {}) {
+function startPerfLog({ file = process.env.DESKTOP_PETS_PERF_LOG, intervalMs = 10000, label = "", extra = null } = {}) {
   if (!file) return { stop() {} };
 
   const histogram = monitorEventLoopDelay({ resolution: 10 });
@@ -40,6 +40,9 @@ function startPerfLog({ file = process.env.DESKTOP_PETS_PERF_LOG, intervalMs = 1
       rssMb: round(mem.rss / 1048576),
       heapUsedMb: round(mem.heapUsed / 1048576),
     };
+    if (extra) {
+      try { line.extra = extra(); } catch (err) { line.extra = { error: err.message }; }
+    }
     try { fs.appendFileSync(file, JSON.stringify(line) + "\n"); } catch {}
     histogram.reset();
     lastCpu = process.cpuUsage();
