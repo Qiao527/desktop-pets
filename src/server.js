@@ -15,6 +15,7 @@ const {
   writeRuntimeConfig,
 } = require("../hooks/server-config");
 const { validateOpencodeBridgeBaseUrl } = require("./opencode-bridge-url");
+const { checkLocalRequest } = require("./local-request-guard");
 
 module.exports = function initServer(ctx) {
 
@@ -165,6 +166,12 @@ function watchSettingsForHookLoss() {
 
 function startHttpServer() {
   httpServer = http.createServer((req, res) => {
+    const rejected = checkLocalRequest(req);
+    if (rejected) {
+      res.writeHead(rejected.status, { "Content-Type": "text/plain" });
+      res.end(rejected.reason);
+      return;
+    }
     if (req.method === "GET" && req.url === "/state") {
       sendStateHealthResponse(res);
     } else if (req.method === "POST" && req.url === "/state") {
