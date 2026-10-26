@@ -108,6 +108,7 @@ function savePrefs() {
   try { fs.writeFileSync(PREFS_PATH, JSON.stringify(data)); } catch {}
 }
 
+let _perfLog = null;               // opt-in benchmark sampler (DESKTOP_PETS_PERF_LOG)
 let _codexMonitor = null;          // Codex CLI JSONL log polling instance
 let _geminiMonitor = null;         // Gemini CLI session JSON polling instance
 
@@ -1209,6 +1210,7 @@ if (!gotTheLock) {
   }
 
   app.whenReady().then(() => {
+    _perfLog = require("./diagnostics/perf-log").startPerfLog({ label: process.env.DESKTOP_PETS_PERF_LABEL || "" });
     permDebugLog = path.join(app.getPath("userData"), "permission-debug.log");
     updateDebugLog = path.join(app.getPath("userData"), "update-debug.log");
     createWindow();
@@ -1263,6 +1265,7 @@ if (!gotTheLock) {
 
   app.on("before-quit", () => {
     isQuitting = true;
+    if (_perfLog) _perfLog.stop();
     savePrefs();
     unregisterToggleShortcut();
     globalShortcut.unregisterAll();
