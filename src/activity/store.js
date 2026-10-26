@@ -217,8 +217,17 @@ function createStore({ dir, now = () => Date.now(), retentionDays = DEFAULT_RETE
     readOnly = false;
   }
 
+  /** True if a history (or its backup) exists. Never creates anything. */
+  async function hasData() {
+    for (const p of [file, backup]) {
+      try { await fsImpl.stat(p); return true; } catch {}
+    }
+    return false;
+  }
+
   return {
     file,
+    hasData,
     load,
     save,
     update,
