@@ -68,10 +68,43 @@ describe("activity poller: scheduling", () => {
     assert.strictEqual(count, 1);
     assert.strictEqual(poller.getHealth().inFlight, true);
     gate.resolve();
-    await clock.advance(0);
-    await clock.advance(100);
+    await clock.advance(0); // overdue: the next run starts right away, never concurrently
     assert.strictEqual(count, 2);
+    await clock.advance(100);
+    assert.strictEqual(count, 3);
     assert.strictEqual(maxActive, 1);
+    poller.stop();
+  });
+
+  it("measures the interval from the start of the previous run", async () => {
+    const clock = createFakeClock(0);
+    const starts = [];
+    const poller = createPoller({
+      name: "cadence",
+      intervalMs: 400,
+      timeoutMs: 5000,
+      clock,
+      probe: () => { starts.push(clock.now()); return new Promise((r) => clock.setTimeout(() => r(true), 220)); },
+    });
+    poller.start();
+    await clock.advance(1300);
+    assert.deepStrictEqual(starts, [0, 400, 800, 1200]);
+    poller.stop();
+  });
+
+  it("starts the next run immediately when a probe outlasts the interval", async () => {
+    const clock = createFakeClock(0);
+    const starts = [];
+    const poller = createPoller({
+      name: "slow",
+      intervalMs: 100,
+      timeoutMs: 5000,
+      clock,
+      probe: () => { starts.push(clock.now()); return new Promise((r) => clock.setTimeout(() => r(true), 250)); },
+    });
+    poller.start();
+    await clock.advance(800);
+    assert.deepStrictEqual(starts, [0, 250, 500, 750]);
     poller.stop();
   });
 

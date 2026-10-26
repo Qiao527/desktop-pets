@@ -4,7 +4,9 @@
 //
 // Guarantees:
 //  - Never overlaps: the next run is scheduled only after the previous one
-//    settles (chained setTimeout, not setInterval).
+//    settles (chained setTimeout, not setInterval). The interval is measured
+//    from the start of the previous run, so a 220ms probe on a 400ms interval
+//    still runs every ~400ms instead of every ~620ms.
 //  - Every run is bounded by `timeoutMs`; a hung probe is aborted.
 //  - Failures back off exponentially (with jitter); permission failures wait
 //    `permissionRetryMs` because they only change when the user acts.
@@ -82,9 +84,9 @@ function createPoller({
     if (onChange) onChange(next, prev);
   }
 
-  function successDelay() {
+  function successDelay(elapsedMs) {
     const ms = getIntervalMs ? getIntervalMs() : intervalMs;
-    return Math.max(0, ms);
+    return Math.max(0, ms - elapsedMs);
   }
 
   function failureDelay(kind, failures) {
@@ -143,7 +145,7 @@ function createPoller({
       health.consecutiveFailures = 0;
       setValue(outcome.value);
       setStatus("ok");
-      delay = successDelay();
+      delay = successDelay(elapsed);
     } else {
       const kind = (outcome.err && outcome.err.kind) || ErrorKind.ERROR;
       health.lastFailureAt = clock.now();
