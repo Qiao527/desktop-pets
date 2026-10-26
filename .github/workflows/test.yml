@@ -24,3 +24,36 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+
+  package-macos:
+    # Unsigned arm64 app bundle; verifies packaging and redistributable contents.
+    needs: test
+    runs-on: macos-latest
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx electron-builder --mac dir --arm64 --publish never
+      - run: node scripts/check-package.js "dist/mac-arm64/Desktop Pets.app/Contents/Resources/app.asar"
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # Production dependencies only; build-tool advisories are tracked in SECURITY.md
+      - run: npm audit --omit=dev --audit-level=high
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
