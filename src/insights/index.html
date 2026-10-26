@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Activity Insights</title>
+  <link rel="stylesheet" href="insights.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>Activity Insights</h1>
+      <p class="subtitle" id="subtitle">Loading…</p>
+    </div>
+    <div class="tracking-control">
+      <span id="tracking-label" class="tracking-label">Tracking</span>
+      <button id="tracking-toggle" class="switch" role="switch" aria-checked="false" aria-labelledby="tracking-label" disabled>
+        <span class="switch-thumb" aria-hidden="true"></span>
+      </button>
+    </div>
+  </header>
+
+  <main id="main" aria-busy="true">
+    <div id="banner" class="banner" role="status" hidden></div>
+
+    <section id="empty" class="card empty" hidden aria-labelledby="empty-title">
+      <h2 id="empty-title">Activity tracking is off</h2>
+      <p>When you turn it on, Desktop Pets keeps a private, on-device tally of how your time splits between
+        <strong>typing</strong>, <strong>listening</strong>, <strong>AI agent work</strong>, <strong>idle</strong>, and <strong>sleeping</strong>.</p>
+      <ul class="facts">
+        <li>Only durations per category and hour are stored — never keystrokes, text, window titles, or app names.</li>
+        <li>Data stays on this Mac and is kept for 90 days.</li>
+        <li>You can pause or delete everything at any time.</li>
+      </ul>
+      <button id="enable-cta" class="primary">Turn on tracking</button>
+    </section>
+
+    <section id="today" class="card" hidden aria-labelledby="today-title">
+      <div class="card-head">
+        <h2 id="today-title">Today</h2>
+        <span class="muted" id="today-now"></span>
+      </div>
+      <div class="stats" id="today-stats"></div>
+      <div class="stack" id="today-bar" role="img"></div>
+      <ul class="legend" id="legend"></ul>
+    </section>
+
+    <section id="hours" class="card" hidden aria-labelledby="hours-title">
+      <div class="card-head">
+        <h2 id="hours-title">Today by hour</h2>
+        <span class="muted" id="peak-hour"></span>
+      </div>
+      <div class="hours" id="hour-chart" role="img"></div>
+      <div class="hour-axis" aria-hidden="true"><span>0</span><span>6</span><span>12</span><span>18</span><span>24</span></div>
+    </section>
+
+    <section id="week" class="card" hidden aria-labelledby="week-title">
+      <div class="card-head">
+        <h2 id="week-title">Last 7 days</h2>
+        <span class="muted" id="week-avg"></span>
+      </div>
+      <table class="week-table" id="week-table">
+        <caption class="visually-hidden">Tracked time per day, by category</caption>
+        <thead><tr><th scope="col">Day</th><th scope="col">Breakdown</th><th scope="col" class="num">Focused</th><th scope="col" class="num">Tracked</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section id="health" class="card" aria-labelledby="health-title">
+      <div class="card-head">
+        <h2 id="health-title">Detector health</h2>
+        <span class="muted" id="health-note"></span>
+      </div>
+      <table class="health-table" id="health-table">
+        <caption class="visually-hidden">Status of each activity detector</caption>
+        <thead><tr><th scope="col">Detector</th><th scope="col">Status</th><th scope="col" class="num">Latency p50 / p95</th><th scope="col">Last good reading</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div id="permission-help" class="help" hidden></div>
+    </section>
+
+    <section id="privacy" class="card" aria-labelledby="privacy-title">
+      <h2 id="privacy-title">Your data</h2>
+      <p class="muted" id="storage-path"></p>
+      <div class="danger-zone">
+        <button id="delete-btn" class="danger">Delete all activity data…</button>
+        <span id="delete-confirm" hidden>
+          <span>This permanently removes the history file and its backups.</span>
+          <button id="delete-yes" class="danger solid">Delete</button>
+          <button id="delete-no">Cancel</button>
+        </span>
+      </div>
+    </section>
+  </main>
+  <script src="insights.js"></script>
+</body>
+</html>

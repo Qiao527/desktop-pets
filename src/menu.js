@@ -64,6 +64,7 @@ const SIZES = {
 // ── UI strings (English only) ──
 const STRINGS = {
     agentIntegration: "Connect AI Coding Agents",
+    activityInsights: "Activity Insights…",
     size: "Size",
     small: "Small (S)",
     medium: "Medium (M)",
@@ -387,6 +388,8 @@ module.exports = function initMenu(ctx) {
         enabled: false,
       },
       { type: "separator" },
+      { label: t("activityInsights"), click: () => ctx.openInsights() },
+      { type: "separator" },
       { label: t("quit"), click: () => requestAppQuit() },
     );
     ctx.tray.setContextMenu(Menu.buildFromTemplate(items));
@@ -659,6 +662,8 @@ module.exports = function initMenu(ctx) {
         label: t("toggleShortcut").replace("{shortcut}", isMac ? "⌘⇧⌥C" : "Ctrl+Shift+Alt+C"),
         enabled: false,
       },
+      { type: "separator" },
+      { label: t("activityInsights"), click: () => ctx.openInsights() },
       { type: "separator" },
       { label: t("quit"), click: () => requestAppQuit() },
     );
