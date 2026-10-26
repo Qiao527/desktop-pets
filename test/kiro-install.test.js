@@ -187,6 +187,8 @@ describe("Kiro hook installer", () => {
       agentsDir,
       settingsPath,
       nodeBin: "/usr/local/bin/node",
+      // Keep the test hermetic: the default seeder shells out to a real kiro-cli
+      syncClawdAgent: () => ({ changed: false }),
     });
 
     const clawdAgent = readJson(clawdPath);
