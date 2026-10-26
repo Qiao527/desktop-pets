@@ -15,11 +15,6 @@ PLAN.md
 PLAN-*.md
 codex-*.md
 CHANGELOG-draft.md
-docs/*
-!docs/copilot-setup.md
-!docs/release-v0.5.5.md
-!docs/guide-theme-creation.md
-!docs/permission-hook-fail-deny-investigation.md
 
 # Temp files from testing
 .tmp_*
@@ -62,3 +57,7 @@ scripts/*
 # Local asset cache / downloads (not for distribution)
 .cache/
 downloads/
+
+# Third-party character themes are local-only (not redistributable).
+# Install them under ~/Library/Application Support/Desktop Pets/themes/ instead.
+themes/pochacco-test/

@@ -54,3 +54,23 @@ describe("default theme (Pip)", () => {
     assert.ok(url && url.endsWith("pip-complete.wav"), url);
   });
 });
+
+describe("packaged build contents", () => {
+  const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
+  const files = pkg.build.files;
+
+  it("does not bundle third-party or all-rights-reserved artwork", () => {
+    const forbidden = ["assets/svg", "themes/clawd", "themes/calico", "themes/pochacco", "themes/**", ".mp3"];
+    for (const entry of files) {
+      for (const bad of forbidden) {
+        assert.ok(!entry.includes(bad), `build.files entry "${entry}" includes ${bad}`);
+      }
+    }
+  });
+
+  it("bundles the default theme and license notices", () => {
+    assert.ok(files.includes("themes/pip/**/*"));
+    assert.ok(files.includes("LICENSE"));
+    assert.ok(files.includes("NOTICE.md"));
+  });
+});

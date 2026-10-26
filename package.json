@@ -83,8 +83,7 @@
     },
     "files": [
       "src/**/*",
-      "assets/svg/**/*",
-      "assets/sounds/**/*",
+      "assets/sounds/pip-*.wav",
       "assets/tray-icon*.png",
       "assets/tray-menubar.png",
       "assets/tray-menubarTemplate.png",
@@ -92,7 +91,9 @@
       "hooks/**/*",
       "extensions/**/*",
       "agents/**/*",
-      "themes/**/*"
+      "themes/pip/**/*",
+      "LICENSE",
+      "NOTICE.md"
     ],
     "asarUnpack": [
       "hooks/**/*",
