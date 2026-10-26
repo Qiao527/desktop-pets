@@ -1,5 +1,14 @@
 # PermissionRequest HTTP hook fail-deny
 
+> **English summary (inherited upstream note, original text in Chinese below).**
+> When the pet is not running, Claude Code's `PermissionRequest` HTTP hook fails
+> with `ECONNREFUSED`, and Claude Code treats that as "user denied" — tools such as
+> Edit/Write/Bash are rejected. Claude Code's documentation says a failed HTTP hook
+> should be non-blocking, so upstream classified this as a Claude Code bug
+> ([anthropics/claude-code#46193](https://github.com/anthropics/claude-code/issues/46193))
+> and chose not to work around it. In this fork the hook is only registered after
+> the user enables *Connect AI Coding Agents*.
+
 > **状态**：已定位为 Claude Code 上游 bug，跟踪 [anthropics/claude-code#46193](https://github.com/anthropics/claude-code/issues/46193)。
 > **影响**：桌宠没在跑时，Claude Code 调用 Edit/Write/Bash 等需要权限确认的工具会被自动 deny，用户看到 "tool use was rejected"。
 > **Clawd 侧动作**：**不兜底**，等上游修。临时方案 = 开桌宠。

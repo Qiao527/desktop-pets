@@ -13,7 +13,7 @@ main-thread responsiveness, and what does it cost?
 | Hardware | Apple M1 (MacBook), macOS 27.0.1 |
 | Runtime | Electron 41 (from `npm ci`), launched with `npm start` |
 | Legacy build | `30d52cc` — synchronous detectors + the perf sampler |
-| Async build | `feat/activity-engine` with the cadence fix (`46cad47`) for r3; r1/r2 used the build before the cadence fix (`d80fa35`) |
+| Async build | `feat/activity-engine` with the cadence fix (`402ad3a`) for r3; r1/r2 used the build before the cadence fix (`d80fa35`) |
 | App state | User prefs: desktop-pet mode on, Pochacco local theme, agent integration off, tracking off |
 | Environment | Music and Spotify both running; Accessibility granted to the launching terminal; other foreground work kept minimal |
 | Duration | 5 minutes per run, alternating legacy → async, 3 rounds |
