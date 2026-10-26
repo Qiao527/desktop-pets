@@ -1,5 +1,7 @@
 const { describe, it } = require("node:test");
 const assert = require("node:assert");
+const fs = require("fs");
+const path = require("path");
 const {
   parseTextFocus, parseRunningProcesses, playerStateScript, textFocusDetector, mediaDetector, TEXT_FOCUS_SCRIPT,
 } = require("../src/activity/detectors");
@@ -99,5 +101,22 @@ describe("media detector", () => {
   it("parses pgrep -l output", () => {
     assert.deepStrictEqual([...parseRunningProcesses("6715 Spotify\n73784 Music\n")], ["Spotify", "Music"]);
     assert.deepStrictEqual([...parseRunningProcesses("")], []);
+  });
+});
+
+describe("main-process blocking guard", () => {
+  it("src/ contains no synchronous child_process calls", () => {
+    const offenders = [];
+    const walk = (dir) => {
+      for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+        const p = path.join(dir, ent.name);
+        if (ent.isDirectory()) walk(p);
+        else if (p.endsWith(".js") && /\b(execFileSync|execSync|spawnSync)\b/.test(fs.readFileSync(p, "utf8"))) {
+          offenders.push(path.relative(path.join(__dirname, ".."), p));
+        }
+      }
+    };
+    walk(path.join(__dirname, "..", "src"));
+    assert.deepStrictEqual(offenders, []);
   });
 });

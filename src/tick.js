@@ -2,8 +2,7 @@
 // Extracted from main.js L527-689
 
 const { screen } = require("electron");
-const { isFrontmostTextFieldFocusedSync } = require("./mac-text-field-focused");
-const { isMacMediaPlayingSync } = require("./mac-media-playing");
+const { typingTransition, mediaTransition } = require("./activity/pet-activity");
 
 module.exports = function initTick(ctx) {
 
@@ -22,10 +21,17 @@ let lastIdleBaseSvg = null;
 let beforeTypingVariant = "idle";
 let lastEyeDx = 0, lastEyeDy = 0;
 let mainTickTimer = null;
-let typingPollTimer = null;
+// Cached detector readings, pushed by the async activity engine (never polled here)
 let typingFocusCached = false;
-let mediaPollTimer = null;
 let mediaPlayingCached = false;
+if (ctx.activityEngine) {
+  const syncSnapshot = (snap) => {
+    typingFocusCached = snap.textFocused;
+    mediaPlayingCached = snap.mediaPlaying;
+  };
+  syncSnapshot(ctx.activityEngine.getSnapshot());
+  ctx.activityEngine.onChange(syncSnapshot);
+}
 
 // ── Theme-driven state (refreshed on hot theme switch) ──
 let theme = null;
@@ -138,42 +144,21 @@ function startMainTick() {
       }
     }
 
-    // Desktop pet: macOS text field focused → typing. Typing wins over listening.
+    // Desktop pet: text field focused → typing; media playing → listening.
+    // Typing wins over listening (see src/activity/pet-activity.js).
     if (ctx.desktopPetMode && !ctx.miniMode && !ctx.miniTransitioning && !ctx.doNotDisturb && !ctx.menuOpen
         && process.platform === "darwin") {
-      if (typingFocusCached && (ctx.currentState === "idle" || ctx.currentState === "idle2" || ctx.currentState === "listening")) {
-        if (idle2ShuffleTimer) { clearTimeout(idle2ShuffleTimer); idle2ShuffleTimer = null; }
-        if (ctx.currentState === "listening") beforeTypingVariant = "listening";
-        else beforeTypingVariant = ctx.currentState === "idle2" ? "idle2" : "idle";
-        ctx.applyState("typing", TYPING_FILE);
-      } else if (!typingFocusCached && ctx.currentState === "typing") {
-        if (beforeTypingVariant === "listening" && mediaPlayingCached) {
-          ctx.applyState("listening", LISTENING_FILE);
-          lastIdleBaseState = "listening";
-          lastIdleBaseSvg = LISTENING_FILE;
-        } else if (beforeTypingVariant === "idle2") {
-          ctx.applyState("idle2", IDLE2_FILE);
-          lastIdleBaseState = "idle2";
-          lastIdleBaseSvg = IDLE2_FILE;
-        } else {
-          ctx.applyState("idle", SVG_IDLE_FOLLOW);
-          lastIdleBaseState = "idle";
-          lastIdleBaseSvg = SVG_IDLE_FOLLOW;
-        }
-      }
-    }
-
-    // Desktop pet: Music / Spotify playing → listening (after typing)
-    if (ctx.desktopPetMode && !ctx.miniMode && !ctx.miniTransitioning && !ctx.doNotDisturb && !ctx.menuOpen
-        && process.platform === "darwin" && !typingFocusCached) {
-      if (mediaPlayingCached && (ctx.currentState === "idle" || ctx.currentState === "idle2")) {
-        if (idle2ShuffleTimer) { clearTimeout(idle2ShuffleTimer); idle2ShuffleTimer = null; }
-        ctx.applyState("listening", LISTENING_FILE);
-      } else if (!mediaPlayingCached && ctx.currentState === "listening") {
-        ctx.applyState("idle", SVG_IDLE_FOLLOW);
-        lastIdleBaseState = "idle";
-        lastIdleBaseSvg = SVG_IDLE_FOLLOW;
-      }
+      applyPetActivity(typingTransition({
+        currentState: ctx.currentState,
+        textFocused: typingFocusCached,
+        mediaPlaying: mediaPlayingCached,
+        beforeTypingVariant,
+      }));
+      applyPetActivity(mediaTransition({
+        currentState: ctx.currentState,
+        textFocused: typingFocusCached,
+        mediaPlaying: mediaPlayingCached,
+      }));
     }
 
     // ── Mini mode peek hover ──
@@ -340,16 +325,23 @@ function startMainTick() {
       ctx.sendToRenderer("eye-move", eyeDx, eyeDy);
     }
   }, 50); // ~20fps — hit-test needs faster response than 67ms eye tracking
+}
 
-  if (process.platform === "darwin") {
-    try { typingFocusCached = isFrontmostTextFieldFocusedSync(); } catch { typingFocusCached = false; }
-    typingPollTimer = setInterval(() => {
-      try { typingFocusCached = isFrontmostTextFieldFocusedSync(); } catch { typingFocusCached = false; }
-    }, 400);
-    try { mediaPlayingCached = isMacMediaPlayingSync(); } catch { mediaPlayingCached = false; }
-    mediaPollTimer = setInterval(() => {
-      try { mediaPlayingCached = isMacMediaPlayingSync(); } catch { mediaPlayingCached = false; }
-    }, 3000);
+function fileForState(state) {
+  if (state === "typing") return TYPING_FILE;
+  if (state === "listening") return LISTENING_FILE;
+  if (state === "idle2") return IDLE2_FILE;
+  return SVG_IDLE_FOLLOW;
+}
+
+function applyPetActivity(transition) {
+  if (!transition) return;
+  if (transition.clearShuffle && idle2ShuffleTimer) { clearTimeout(idle2ShuffleTimer); idle2ShuffleTimer = null; }
+  if (transition.beforeTypingVariant) beforeTypingVariant = transition.beforeTypingVariant;
+  ctx.applyState(transition.state, fileForState(transition.state));
+  if (transition.base) {
+    lastIdleBaseState = transition.base;
+    lastIdleBaseSvg = fileForState(transition.base);
   }
 }
 
@@ -359,8 +351,6 @@ function resetIdleTimer() {
 
 function cleanup() {
   if (mainTickTimer) { clearInterval(mainTickTimer); mainTickTimer = null; }
-  if (typingPollTimer) { clearInterval(typingPollTimer); typingPollTimer = null; }
-  if (mediaPollTimer) { clearInterval(mediaPollTimer); mediaPollTimer = null; }
   if (idleLookReturnTimer) { clearTimeout(idleLookReturnTimer); idleLookReturnTimer = null; }
   if (yawnDelayTimer) { clearTimeout(yawnDelayTimer); yawnDelayTimer = null; }
   if (idle2ShuffleTimer) { clearTimeout(idle2ShuffleTimer); idle2ShuffleTimer = null; }

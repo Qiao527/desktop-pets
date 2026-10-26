@@ -1,4 +1,4 @@
-const { app, BrowserWindow, screen, Menu, ipcMain, globalShortcut } = require("electron");
+const { app, BrowserWindow, screen, Menu, ipcMain, globalShortcut, powerMonitor } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const { applyStationaryCollectionBehavior } = require("./mac-window");
@@ -471,7 +471,16 @@ function getHitRectScreen(bounds) {
 }
 
 // ── Main tick — delegated to src/tick.js ──
+// ── Activity detection (async macOS detectors) — see src/activity/ ──
+const { createActivityEngine } = require("./activity/engine");
+const activityEngine = createActivityEngine({
+  powerMonitor,
+  // Readings drive animations only in desktop-pet mode; poll slowly otherwise
+  isObserved: () => desktopPetMode && !doNotDisturb && !_mini.getMiniMode(),
+});
+
 const _tickCtx = {
+  activityEngine,
   get theme() { return activeTheme; },
   get win() { return win; },
   get currentState() { return _state.getCurrentState(); },
@@ -1211,6 +1220,7 @@ if (!gotTheLock) {
 
   app.whenReady().then(() => {
     _perfLog = require("./diagnostics/perf-log").startPerfLog({ label: process.env.DESKTOP_PETS_PERF_LABEL || "" });
+    activityEngine.start();
     permDebugLog = path.join(app.getPath("userData"), "permission-debug.log");
     updateDebugLog = path.join(app.getPath("userData"), "update-debug.log");
     createWindow();
@@ -1266,6 +1276,7 @@ if (!gotTheLock) {
   app.on("before-quit", () => {
     isQuitting = true;
     if (_perfLog) _perfLog.stop();
+    activityEngine.stop();
     savePrefs();
     unregisterToggleShortcut();
     globalShortcut.unregisterAll();
