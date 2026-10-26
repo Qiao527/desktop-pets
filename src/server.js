@@ -136,6 +136,7 @@ function watchSettingsForHookLoss() {
   const settingsPath = path.join(settingsDir, SETTINGS_FILENAME);
   let debounceTimer = null;
   let lastSyncTime = 0;
+  if (settingsWatcher) return;
   try {
     settingsWatcher = fs.watch(settingsDir, (_event, filename) => {
       if (filename && filename !== SETTINGS_FILENAME) return;
@@ -146,7 +147,7 @@ function watchSettingsForHookLoss() {
         if (Date.now() - lastSyncTime < 5000) return;
         try {
           const raw = fs.readFileSync(settingsPath, "utf-8");
-          if (!raw.includes(HOOK_MARKER)) {
+          if (ctx.agentSessionReactive === true && !raw.includes(HOOK_MARKER)) {
             console.log("Clawd: hooks wiped from settings.json — re-registering");
             lastSyncTime = Date.now();
             syncClawdHooks();
@@ -517,22 +518,23 @@ function startHttpServer() {
     activeServerPort = listenPorts[listenIndex];
     writeRuntimeConfig(activeServerPort);
     console.log(`Clawd state server listening on 127.0.0.1:${activeServerPort}`);
-    // Defer hook/plugin registration off the startup path. Each sync call
-    // reads+parses+writes a config JSON (50-150ms cumulative on slow disks),
-    // and all five operate on independent files for independent agents, so
-    // none of them need to block the HTTP server from accepting traffic.
-    setImmediate(() => {
-      syncClawdHooks();
-      syncGeminiHooks();
-      syncCursorHooks();
-      syncCodeBuddyHooks();
-      syncKiroHooks();
-      syncOpencodePlugin();
-      watchSettingsForHookLoss();
-    });
+    // Hook/plugin registration writes into other tools' config files, so it
+    // only runs once the user has opted in to agent integration. Deferred off
+    // the startup path: each sync reads+parses+writes a config JSON.
+    if (ctx.agentSessionReactive === true) setImmediate(syncAgentIntegrations);
   });
 
   httpServer.listen(listenPorts[listenIndex], "127.0.0.1");
+}
+
+function syncAgentIntegrations() {
+  syncClawdHooks();
+  syncGeminiHooks();
+  syncCursorHooks();
+  syncCodeBuddyHooks();
+  syncKiroHooks();
+  syncOpencodePlugin();
+  watchSettingsForHookLoss();
 }
 
 function cleanup() {
@@ -541,6 +543,6 @@ function cleanup() {
   if (httpServer) httpServer.close();
 }
 
-return { startHttpServer, getHookServerPort, syncClawdHooks, syncGeminiHooks, syncCursorHooks, syncCodeBuddyHooks, syncKiroHooks, syncOpencodePlugin, cleanup };
+return { startHttpServer, getHookServerPort, syncAgentIntegrations, syncClawdHooks, syncGeminiHooks, syncCursorHooks, syncCodeBuddyHooks, syncKiroHooks, syncOpencodePlugin, cleanup };
 
 };

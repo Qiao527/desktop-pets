@@ -668,6 +668,8 @@ const _menuCtx = {
   getActiveThemeId: () => activeTheme ? activeTheme._id : themeLoader.DEFAULT_THEME_ID,
   getActiveThemeName: () => (activeTheme && activeTheme.name) || "Desktop Pets",
   get agentSessionReactive() { return agentSessionReactive; },
+  set agentSessionReactive(v) { agentSessionReactive = !!v; },
+  syncAgentIntegrations: () => _server.syncAgentIntegrations(),
   ensureUserThemesDir: () => themeLoader.ensureUserThemesDir(),
 };
 const _menu = require("./menu")(_menuCtx);

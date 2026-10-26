@@ -63,6 +63,7 @@ const SIZES = {
 
 // ── UI strings (English only) ──
 const STRINGS = {
+    agentIntegration: "Connect AI Coding Agents",
     size: "Size",
     small: "Small (S)",
     medium: "Medium (M)",
@@ -610,6 +611,18 @@ module.exports = function initMenu(ctx) {
         click: () => ctx.doNotDisturb ? ctx.disableDoNotDisturb() : ctx.enableDoNotDisturb(),
       },
       { type: "separator" },
+      {
+        // Opt-in: enabling writes hook entries into each agent's own config
+        label: t("agentIntegration"),
+        type: "checkbox",
+        checked: ctx.agentSessionReactive === true,
+        click: (menuItem) => {
+          ctx.agentSessionReactive = menuItem.checked;
+          if (menuItem.checked) ctx.syncAgentIntegrations();
+          ctx.savePrefs();
+          rebuildAllMenus();
+        },
+      },
       ...(ctx.agentSessionReactive !== false ? [{
         label: `${t("sessions")} (${ctx.sessions.size})`,
         submenu: ctx.buildSessionSubmenu(),
