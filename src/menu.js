@@ -140,11 +140,11 @@ module.exports = function initMenu(ctx) {
   // ── Theme submenu builder ──
   function buildThemeSubmenu() {
     const themes = ctx.discoverThemes ? ctx.discoverThemes() : [];
-    const activeId = ctx.getActiveThemeId ? ctx.getActiveThemeId() : "pochacco-test";
+    const activeId = ctx.getActiveThemeId ? ctx.getActiveThemeId() : null;
 
-    const hiddenThemeIds = new Set(["clawd", "calico"]);
+    // "template" is documentation for theme authors, not a selectable theme
     const items = themes
-      .filter(theme => !hiddenThemeIds.has(theme.id))
+      .filter(theme => theme.id !== "template")
       .map(theme => ({
       label: theme.name + (theme.builtin ? "" : " ✦"),
       type: "radio",

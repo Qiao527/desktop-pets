@@ -103,7 +103,7 @@ function savePrefs() {
     autoStartWithClaude, bubbleFollowPet, hideBubbles, showSessionId, soundMuted,
     desktopPetMode,
     agentSessionReactive,
-    theme: activeTheme ? activeTheme._id : "pochacco-test",
+    theme: activeTheme ? activeTheme._id : themeLoader.DEFAULT_THEME_ID,
   };
   try { fs.writeFileSync(PREFS_PATH, JSON.stringify(data)); } catch {}
 }
@@ -117,9 +117,8 @@ themeLoader.init(__dirname, app.getPath("userData"));
 
 function loadThemeFromPrefs(prefs) {
   const t = prefs && prefs.theme;
-  // Treat built-in defaults as replaced by pochacco-test
-  const desired = (!t || t === "clawd" || t === "calico") ? "pochacco-test" : t;
-  return themeLoader.loadTheme(desired);
+  // Unknown or missing themes fall back to DEFAULT_THEME_ID inside loadTheme()
+  return themeLoader.loadTheme(t || themeLoader.DEFAULT_THEME_ID);
 }
 const _initialPrefs = loadPrefs();
 if (_initialPrefs && typeof _initialPrefs.desktopPetMode === "boolean") {
@@ -666,7 +665,7 @@ const _menuCtx = {
   reapplyMacVisibility,
   switchTheme: (id) => switchTheme(id),
   discoverThemes: () => themeLoader.discoverThemes(),
-  getActiveThemeId: () => activeTheme ? activeTheme._id : "pochacco-test",
+  getActiveThemeId: () => activeTheme ? activeTheme._id : themeLoader.DEFAULT_THEME_ID,
   getActiveThemeName: () => (activeTheme && activeTheme.name) || "Desktop Pets",
   get agentSessionReactive() { return agentSessionReactive; },
   ensureUserThemesDir: () => themeLoader.ensureUserThemesDir(),
