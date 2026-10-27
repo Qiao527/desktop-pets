@@ -57,6 +57,6 @@ jobs:
       - run: npm ci
       # Production dependencies only; build-tool advisories are tracked in SECURITY.md
       - run: npm audit --omit=dev --audit-level=high
-      - uses: gitleaks/gitleaks-action@v2
+      - uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
