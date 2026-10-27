@@ -40,7 +40,7 @@ activity detection, opt-in private time tracking, and an Insights window.
 | Insights window | — | Sandboxed Electron window with today/hourly/7-day summaries, detector health, permission help, and delete controls |
 | Default artwork | Clawd (Anthropic character) and Calico (all rights reserved) | **Pip**, an original theme generated from code (MIT); third-party art excluded from builds |
 | Agent hooks | Written into six tools' configs on every launch | Only after the user opts in |
-| Tests / CI | 308 unit tests, release-only workflow | +89 tests (397 total: detectors, scheduling, accounting, storage, IPC security, theme), test workflow on push/PR |
+| Tests / CI | 308 unit tests, release-only workflow | +98 tests (406 total: detectors, scheduling, accounting, storage, IPC security, theme), test workflow on push/PR |
 | Pet engine, windows, state machine, agent integrations, themes system | ✅ upstream | unchanged except where listed |
 
 A full list of inherited components is in [NOTICE.md](NOTICE.md).
@@ -147,7 +147,7 @@ arm64 app bundle and runs the package check on every push.
 ## Testing
 
 ```bash
-npm test                                  # 397 unit/integration tests, Node built-in runner
+npm test                                  # 406 unit/integration tests, Node built-in runner
 node perf/activity-detectors/summarize.js perf/activity-detectors/results/*/*.jsonl --md
 ```
 
