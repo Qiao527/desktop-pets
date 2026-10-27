@@ -21,6 +21,7 @@ main-thread responsiveness, and what does it cost?
 
 Runner: [`perf/activity-detectors/run-app.sh`](../perf/activity-detectors/run-app.sh).
 Summary: [`perf/activity-detectors/summarize.js`](../perf/activity-detectors/summarize.js).
+Chart (README): [`perf/activity-detectors/plot.js`](../perf/activity-detectors/plot.js) `legacy-sync-r1.jsonl async-engine-r1.jsonl docs/media/benchmark`.
 Raw data: [`perf/activity-detectors/results/2026-10-26-m1-macos27/`](../perf/activity-detectors/results/2026-10-26-m1-macos27/).
 
 Event-loop delay is how late a timer fires. With a 10 ms sampling resolution,
