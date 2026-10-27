@@ -31,7 +31,7 @@ jobs:
       - run: node scripts/check-package.js "dist/mac-arm64/Desktop Pets.app/Contents/Resources/app.asar"
       - name: Checksums
         run: cd dist && shasum -a 256 *.dmg > SHA256SUMS.txt && cat SHA256SUMS.txt
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: mac-release
           path: |
