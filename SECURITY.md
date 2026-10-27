@@ -22,14 +22,10 @@ port for AI-agent hooks.
 
 ## Known issues
 
-- **Electron advisories.** `npm audit` reports advisories for Electron `<= 42.11.15`
-  (HID/USB/pointer-lock permission attribution, extension `tabs.query`, SameSite on
-  link-opened windows). The fix requires a major upgrade to Electron 43, which is
-  planned. Exposure is limited: the app loads no remote content, uses no extensions,
-  and the Insights window denies all permission requests.
-- **Build-tool advisories.** `electron-builder` pulls in `tar`, `tmp`, and `picomatch`
-  versions with advisories. They run only at build time on the developer's machine.
-  CI audits production dependencies (`npm audit --omit=dev`), which currently report none.
+- **Dependencies.** Since moving to Electron 42.11.18 (which fixes the advisories for
+  Electron `<= 42.11.15`), `npm audit` reports no known vulnerabilities in production
+  or development dependencies. CI fails on high-severity advisories in production
+  dependencies, and Dependabot proposes weekly updates.
 - **Inherited windows.** The pet render, hit-test, and permission-bubble windows
   (inherited from upstream) use context isolation but not `sandbox: true`, and some of
   their IPC handlers do not validate the sender. They load only local files.
