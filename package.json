@@ -1,6 +1,6 @@
 {
   "name": "desktop-pets",
-  "version": "0.5.10",
+  "version": "0.6.0",
   "description": "macOS menu bar desktop pet (themes, idle states, optional AI tool hooks).",
   "main": "src/main.js",
   "scripts": {

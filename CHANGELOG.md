@@ -27,11 +27,13 @@ the fork's initial Pochacco customization.
 - Packaged builds contain only redistributable artwork.
 
 ### Fixed
+- Opt-in tracking did not resume after restarting the app.
 - Main thread blocked by synchronous `osascript` calls every 400 ms.
 - Checking playback launched Apple Music when it was closed.
 - Missing Accessibility permission was indistinguishable from "not typing".
 - `LICENSE` restored upstream's copyright notice.
 - Kiro installer test was not hermetic on machines with `kiro-cli` installed.
+- Local hook server accepted browser and DNS-rebinding requests.
 
 ### Removed
 - Pochacco artwork (Sanrio character) from the repository; it can be installed
