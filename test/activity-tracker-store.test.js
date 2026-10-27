@@ -11,12 +11,20 @@ const at = (y, mo, d, h = 0, mi = 0, s = 0) => new Date(y, mo - 1, d, h, mi, s).
 describe("categorize", () => {
   it("applies priority and ignores time while the system is paused", () => {
     assert.strictEqual(categorize({ systemPaused: true, textFocused: true }), null);
-    assert.strictEqual(categorize({ petState: "sleeping", textFocused: true }), "sleeping");
-    assert.strictEqual(categorize({ doNotDisturb: true }), "sleeping");
+    assert.strictEqual(categorize({ doNotDisturb: true, textFocused: true }), "sleeping");
     assert.strictEqual(categorize({ textFocused: true, mediaPlaying: true }), "typing");
     assert.strictEqual(categorize({ mediaPlaying: true, agentBusy: true }), "listening");
     assert.strictEqual(categorize({ agentBusy: true }), "agent");
     assert.strictEqual(categorize({}), "idle");
+  });
+
+  it("uses OS input idle time, so typing counts even while the pet dozes", () => {
+    assert.strictEqual(categorize({ userIdleMs: 5000, textFocused: true }), "typing");
+    assert.strictEqual(categorize({ userIdleMs: 120000, textFocused: true }), "sleeping", "focused field but away");
+    assert.strictEqual(categorize({ userIdleMs: 600000, mediaPlaying: true }), "listening");
+    assert.strictEqual(categorize({ userIdleMs: 600000, agentBusy: true }), "agent");
+    assert.strictEqual(categorize({ userIdleMs: 600000 }), "sleeping");
+    assert.strictEqual(categorize({ userIdleMs: 119999 }), "idle");
   });
 });
 
@@ -43,6 +51,26 @@ describe("tracker", () => {
     const days = tr.drain();
     assert.strictEqual(days["2026-10-26"].totalsMs.listening, 10 * 60000);
     assert.strictEqual(days["2026-10-27"].totalsMs.listening, 15 * 60000);
+  });
+
+  it("keeps totals exact across a DST fall-back day", () => {
+    const prev = process.env.TZ;
+    process.env.TZ = "America/New_York";
+    try {
+      // 2026-11-01 01:59:59 EDT is followed by 01:00:00 EST.
+      let t = new Date("2026-11-01T00:30:00-04:00").getTime();
+      const tr = createTracker({ now: () => t, maxGapMs: Infinity });
+      tr.observe("typing");
+      t = new Date("2026-11-01T02:30:00-05:00").getTime(); // 3 real hours later
+      tr.pause();
+      const d = tr.drain()["2026-11-01"];
+      assert.strictEqual(d.totalsMs.typing, 3 * 3600000);
+      assert.strictEqual(d.hourlyMs.typing[0], 30 * 60000);
+      assert.strictEqual(d.hourlyMs.typing[1], 2 * 3600000, "both 1 AM hours");
+      assert.strictEqual(d.hourlyMs.typing[2], 30 * 60000);
+    } finally {
+      if (prev === undefined) delete process.env.TZ; else process.env.TZ = prev;
+    }
   });
 
   it("drops gaps longer than maxGapMs (missed sleep events)", () => {

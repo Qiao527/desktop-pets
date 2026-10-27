@@ -87,6 +87,8 @@ function createStore({ dir, now = () => Date.now(), retentionDays = DEFAULT_RETE
   let lastLoad = { source: null, recoveredFrom: null, quarantined: null };
   let saving = null;
   let saveAgain = false;
+  let loading = null;
+  let deleting = false;
 
   async function readJson(p) {
     const stat = await fsImpl.stat(p);
@@ -118,7 +120,13 @@ function createStore({ dir, now = () => Date.now(), retentionDays = DEFAULT_RETE
     return { status: "ok", doc: migrate(parsed) };
   }
 
-  async function load() {
+  /** Load (or reload) from disk. Concurrent callers share one load. */
+  function load() {
+    if (!loading) loading = loadOnce().finally(() => { loading = null; });
+    return loading;
+  }
+
+  async function loadOnce() {
     await fsImpl.mkdir(dir, { recursive: true, mode: 0o700 });
     readOnly = false;
     lastLoad = { source: null, recoveredFrom: null, quarantined: null, error: null };
@@ -179,7 +187,7 @@ function createStore({ dir, now = () => Date.now(), retentionDays = DEFAULT_RETE
   /** Persist the current document. Concurrent calls coalesce. */
   async function save() {
     if (!doc) throw new Error("store not loaded");
-    if (readOnly) return false;
+    if (readOnly || deleting) return false;
     if (saving) { saveAgain = true; return saving; }
     saving = (async () => {
       try {
@@ -205,6 +213,15 @@ function createStore({ dir, now = () => Date.now(), retentionDays = DEFAULT_RETE
 
   /** Remove every file this store has written, including backups. */
   async function deleteAll() {
+    deleting = true;
+    try {
+      await deleteFiles();
+    } finally {
+      deleting = false;
+    }
+  }
+
+  async function deleteFiles() {
     if (saving) { try { await saving; } catch {} }
     let names = [];
     try { names = await fsImpl.readdir(dir); } catch (err) { if (err.code !== "ENOENT") throw err; }

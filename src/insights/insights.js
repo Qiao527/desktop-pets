@@ -8,7 +8,7 @@ const LABELS = {
   listening: "Listening",
   agent: "AI agent",
   idle: "Idle",
-  sleeping: "Sleeping",
+  sleeping: "Away",
 };
 const DETECTOR_LABELS = { textFocus: "Text input focus", media: "Media playback" };
 const STATUS = {

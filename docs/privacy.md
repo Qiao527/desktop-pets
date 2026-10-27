@@ -17,6 +17,7 @@
 |---|---|---|
 | Text input focus | The accessibility *role* of the focused element in the frontmost app (e.g. `AXTextArea`) | Element value, typed text, selection, window title, app name |
 | Media playback | Whether Music or Spotify is running, and its player state (`playing` / `paused`) | Track, artist, playlist, history |
+| Input idle time (tracking only) | Seconds since the last keyboard/mouse event, from macOS (`powerMonitor.getSystemIdleTime()`) | Which keys or buttons, or anything typed |
 
 Detector readings are used live to animate the pet even when tracking is off;
 they are only written to disk when tracking is on.

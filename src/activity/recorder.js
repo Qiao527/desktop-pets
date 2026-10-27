@@ -12,7 +12,7 @@ const POWER_EVENTS = ["suspend", "resume", "lock-screen", "unlock-screen"];
 function createActivityRecorder({
   store,
   engine,
-  getPetState = () => null,
+  getUserIdleMs = () => 0,
   getDoNotDisturb = () => false,
   getSessions = () => null,
   powerMonitor = null,
@@ -28,6 +28,8 @@ function createActivityRecorder({
   let unsubscribe = null;
   let systemPaused = false;
   let loadError = null;
+  let session = 0;
+  let deleting = false;      // bumps on every enable/disable; stale async steps bail out
   const powerHandlers = [];
 
   function agentBusy() {
@@ -41,7 +43,7 @@ function createActivityRecorder({
     const snap = engine ? engine.getSnapshot() : {};
     return categorize({
       systemPaused: systemPaused || (engine ? engine.isPaused() : false),
-      petState: getPetState(),
+      userIdleMs: getUserIdleMs(),
       doNotDisturb: getDoNotDisturb(),
       textFocused: !!snap.textFocused,
       mediaPlaying: !!snap.mediaPlaying,
@@ -61,6 +63,7 @@ function createActivityRecorder({
   }
 
   async function flush() {
+    if (deleting) return;
     mergePending();
     try { await store.save(); } catch (err) { console.warn("activity: save failed:", err.message); }
   }
@@ -80,15 +83,16 @@ function createActivityRecorder({
   async function enable() {
     if (enabled) return;
     enabled = true;
+    const mine = ++session;
     try {
-      await store.load();
+      if (!store.getDoc()) await store.load();
       loadError = null;
     } catch (err) {
-      loadError = err.message;
-      enabled = false;
+      if (mine === session) { loadError = err.message; enabled = false; }
       throw err;
     }
-    if (!enabled) return; // disabled while loading
+    // disable() (or another enable/disable pair) ran while loading
+    if (mine !== session || !enabled) return;
     tracker = createTracker({ now });
     systemPaused = false;
     sample();
@@ -115,6 +119,7 @@ function createActivityRecorder({
   async function disable() {
     if (!enabled) return;
     enabled = false;
+    session++;
     stopSampling();
     if (tracker) {
       tracker.pause();
@@ -124,9 +129,16 @@ function createActivityRecorder({
   }
 
   async function deleteAll() {
+    // Discard unsaved progress and start a fresh segment *before* awaiting,
+    // so a periodic flush cannot re-save the data being deleted.
+    deleting = true;
     if (tracker) { tracker.pause(); tracker.drain(); }
-    await store.deleteAll();
-    if (enabled) tracker = createTracker({ now });
+    if (enabled) { tracker = createTracker({ now }); sample(); }
+    try {
+      await store.deleteAll();
+    } finally {
+      deleting = false;
+    }
   }
 
   /** Summary for the Insights window; null when no history exists. */

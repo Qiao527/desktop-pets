@@ -100,18 +100,23 @@ now:
 
 One category is active at a time, chosen by priority:
 
-| Priority | Category | Source |
+| Priority | Category (UI label) | Source |
 |---|---|---|
 | — | *(not recorded)* | system suspended or screen locked |
-| 1 | sleeping | pet is yawning/dozing/sleeping or Do Not Disturb |
-| 2 | typing | a text-like accessibility element is focused |
+| 1 | sleeping ("Away") | Do Not Disturb |
+| 2 | typing | a text-like element is focused **and** there was keyboard/mouse input in the last 2 min |
 | 3 | listening | Music or Spotify reports `playing` |
 | 4 | agent | an AI coding-agent session is thinking/working (only if agent integration is enabled) |
-| 5 | idle | otherwise |
+| 5 | sleeping ("Away") | no keyboard/mouse input for 2 min (`powerMonitor.getSystemIdleTime()`) |
+| 6 | idle | otherwise |
 
-"Typing" means *a text field has focus*; keystrokes are never observed.
-Segments are split at local hour and day boundaries using local-time `Date`
-arithmetic (DST days have 23/25 hours). Gaps longer than 2 minutes without an
+"Typing" means *a text field has focus while you are active*; keystrokes and
+their contents are never observed — the OS idle timer only reports seconds
+since the last input event. (The pet's own sleep timer only watches the mouse,
+so it is not used for accounting.)
+Segments are split at local hour and day boundaries computed from local time
+(DST days have 23/25 hours; on a fall-back day both 1 AM hours share the
+hour-1 bucket, while daily totals stay exact). Gaps longer than 2 minutes without an
 observation (e.g. a missed suspend event) are dropped, and a backwards clock
 jump discards the open segment rather than inventing time.
 

@@ -40,17 +40,17 @@ function setup(overrides = {}) {
   const engine = fakeEngine();
   const power = new EventEmitter();
   const timers = manualTimers();
-  let petState = "idle";
+  let idleMs = 0;
   const recorder = createActivityRecorder({
     store: createStore({ dir, now: clock.now }),
     engine,
     powerMonitor: power,
-    getPetState: () => petState,
+    getUserIdleMs: () => idleMs,
     now: clock.now,
     timers,
     ...overrides,
   });
-  return { dir, clock, engine, power, timers, recorder, setPet: (s) => { petState = s; } };
+  return { dir, clock, engine, power, timers, recorder, setIdle: (ms) => { idleMs = ms; } };
 }
 
 describe("activity recorder: opt-in", () => {
@@ -107,14 +107,40 @@ describe("activity recorder: opt-in", () => {
     await recorder.disable();
   });
 
-  it("maps the sleeping pet to the sleeping category", async () => {
-    const { clock, recorder, setPet } = setup();
+  it("counts time without keyboard/mouse input as away (sleeping)", async () => {
+    const { clock, recorder, setIdle } = setup();
     await recorder.enable();
-    setPet("sleeping");
+    setIdle(300000);
     recorder.sample();
     clock.advance(20000);
     recorder.sample();
     assert.strictEqual((await recorder.getSummary()).today.totalsMs.sleeping, 20000);
+    await recorder.disable();
+  });
+
+  it("survives enable/disable/enable while the store is loading (no leaked timers)", async () => {
+    const { engine, power, timers, recorder } = setup();
+    const a = recorder.enable();
+    const b = recorder.disable();
+    const c = recorder.enable();
+    await Promise.all([a, b, c]);
+    assert.strictEqual(recorder.isEnabled(), true);
+    assert.strictEqual(timers.count(), 2, "exactly one sample + one flush timer");
+    assert.strictEqual(engine.listenerCount(), 1);
+    assert.strictEqual(power.listenerCount("suspend"), 1);
+    await recorder.disable();
+    assert.strictEqual(timers.count(), 0);
+  });
+
+  it("a flush racing deleteAll cannot resurrect deleted data", async () => {
+    const { dir, clock, recorder } = setup();
+    await recorder.enable();
+    clock.advance(60000);
+    await recorder.flush();
+    const del = recorder.deleteAll();
+    const fl = recorder.flush();
+    await Promise.all([del, fl]);
+    assert.ok(!fs.existsSync(path.join(dir, "history.json")), "history must stay deleted");
     await recorder.disable();
   });
 

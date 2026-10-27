@@ -19,19 +19,26 @@
 
 const CATEGORIES = Object.freeze(["typing", "listening", "agent", "idle", "sleeping"]);
 
-const PET_SLEEP_STATES = new Set(["yawning", "dozing", "collapsing", "sleeping", "mini-sleep", "mini-enter-sleep"]);
+// No keyboard or mouse input for this long counts as "away" (stored as the
+// "sleeping" category). Matches the default theme's pet sleep timeout.
+const AWAY_AFTER_MS = 120000;
 const AGENT_BUSY_STATES = new Set(["thinking", "working", "juggling", "sweeping", "carrying"]);
 
 /**
  * Decide the single category for "right now". Returns null when time should
  * not be recorded at all (system asleep or screen locked).
+ *
+ * `userIdleMs` is the OS keyboard+mouse idle time (powerMonitor), which —
+ * unlike the pet's mouse-only sleep timer — resets while the user types.
  */
-function categorize({ systemPaused = false, petState = null, doNotDisturb = false, textFocused = false, mediaPlaying = false, agentBusy = false }) {
+function categorize({ systemPaused = false, doNotDisturb = false, userIdleMs = 0, textFocused = false, mediaPlaying = false, agentBusy = false }) {
   if (systemPaused) return null;
-  if (doNotDisturb || PET_SLEEP_STATES.has(petState)) return "sleeping";
-  if (textFocused) return "typing";
+  if (doNotDisturb) return "sleeping";
+  const away = userIdleMs >= AWAY_AFTER_MS;
+  if (textFocused && !away) return "typing";
   if (mediaPlaying) return "listening";
   if (agentBusy) return "agent";
+  if (away) return "sleeping";
   return "idle";
 }
 
@@ -44,10 +51,14 @@ function localDayKey(ms) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-/** Start of the next local hour after `ms`. */
+/**
+ * Start of the next local hour after `ms`. Computed from the minutes/seconds
+ * already elapsed in the current local hour, so the repeated hour on a DST
+ * fall-back day is a separate (60 minute) bucket rather than being skipped.
+ */
 function nextLocalHour(ms) {
   const d = new Date(ms);
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours() + 1).getTime();
+  return ms + 3600000 - (d.getMinutes() * 60000 + d.getSeconds() * 1000 + d.getMilliseconds());
 }
 
 function emptyDay() {
@@ -167,7 +178,7 @@ function mergeDays(target, delta) {
 
 module.exports = {
   CATEGORIES,
-  PET_SLEEP_STATES,
+  AWAY_AFTER_MS,
   AGENT_BUSY_STATES,
   categorize,
   localDayKey,

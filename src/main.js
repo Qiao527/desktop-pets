@@ -112,8 +112,8 @@ function savePrefs() {
   try { fs.writeFileSync(PREFS_PATH, JSON.stringify(data)); } catch {}
 }
 
-let _perfLog = null;
-let _insights = null;               // Activity Insights window controller               // opt-in benchmark sampler (DESKTOP_PETS_PERF_LOG)
+let _perfLog = null;                // opt-in benchmark sampler (DESKTOP_PETS_PERF_LOG)
+let _insights = null;               // Activity Insights window controller
 let _codexMonitor = null;          // Codex CLI JSONL log polling instance
 let _geminiMonitor = null;         // Gemini CLI session JSON polling instance
 
@@ -480,8 +480,9 @@ function getHitRectScreen(bounds) {
 const { createActivityEngine } = require("./activity/engine");
 const activityEngine = createActivityEngine({
   powerMonitor,
-  // Readings drive animations only in desktop-pet mode; poll slowly otherwise
-  isObserved: () => desktopPetMode && !doNotDisturb && !_mini.getMiniMode(),
+  // Poll at full rate while readings drive animations or are being recorded
+  isObserved: () => (desktopPetMode && !doNotDisturb && !_mini.getMiniMode())
+    || activityRecorder.isEnabled(),
 });
 
 // Opt-in recorder + Insights window (src/activity/recorder.js, src/insights/)
@@ -491,14 +492,19 @@ const activityRecorder = createActivityRecorder({
   store: createStore({ dir: path.join(app.getPath("userData"), "activity") }),
   engine: activityEngine,
   powerMonitor,
-  getPetState: () => _state.getCurrentState(),
+  // OS-wide keyboard+mouse idle seconds (no content), used to detect "away"
+  getUserIdleMs: () => powerMonitor.getSystemIdleTime() * 1000,
   getDoNotDisturb: () => doNotDisturb,
   getSessions: () => (agentSessionReactive ? sessions : null),
 });
 
 async function setActivityTracking(enabled) {
-  if (enabled) await activityRecorder.enable();
-  else await activityRecorder.disable();
+  if (enabled) {
+    await activityRecorder.enable();
+    activityEngine.refresh(); // switch to the fast interval now, not after the slow one
+  } else {
+    await activityRecorder.disable();
+  }
   activityTracking = enabled;
   savePrefs();
 }
