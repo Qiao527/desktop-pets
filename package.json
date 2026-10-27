@@ -1,7 +1,7 @@
 {
   "name": "desktop-pets",
   "version": "0.6.0",
-  "description": "macOS menu bar desktop pet (themes, idle states, optional AI tool hooks).",
+  "description": "macOS desktop pet with non-blocking activity detection, opt-in private time tracking, and AI-agent awareness.",
   "main": "src/main.js",
   "scripts": {
     "start": "node launch.js",
@@ -12,6 +12,7 @@
     "build:linux": "electron-builder --linux",
     "build:all": "electron-builder --win --mac --linux",
     "test": "node --test test/*.test.js",
+    "test:coverage": "node --test --experimental-test-coverage --test-coverage-include=src/activity/** --test-coverage-include=src/insights/controller.js --test-coverage-include=src/local-request-guard.js --test-coverage-lines=95 --test-coverage-branches=85 test/*.test.js",
     "install:gemini-hooks": "node hooks/gemini-install.js",
     "install:cursor-hooks": "node hooks/cursor-install.js",
     "install:kiro-hooks": "node hooks/kiro-install.js"
@@ -20,10 +21,23 @@
     "desktop-pet",
     "electron",
     "macos",
+    "activity-tracking",
+    "privacy",
     "menubar"
   ],
   "author": "Qiao527",
   "license": "MIT",
+  "homepage": "https://github.com/Qiao527/desktop-pets#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Qiao527/desktop-pets.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Qiao527/desktop-pets/issues"
+  },
+  "engines": {
+    "node": ">=22"
+  },
   "type": "commonjs",
   "build": {
     "appId": "com.desktoppets.app",

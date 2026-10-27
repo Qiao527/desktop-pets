@@ -24,6 +24,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+      - name: Coverage (activity subsystem, enforced minimums)
+        if: matrix.os == 'macos-latest'
+        run: npm run test:coverage
 
   package-macos:
     # Unsigned arm64 app bundle; verifies packaging and redistributable contents.
