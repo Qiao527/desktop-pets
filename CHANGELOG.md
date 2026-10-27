@@ -4,6 +4,13 @@ All notable changes in this fork. Versions before 0.6.0 are upstream
 [clawd-on-desk](https://github.com/rullerzhou-afk/clawd-on-desk) releases plus
 the fork's initial Pochacco customization.
 
+## Unreleased
+
+### Fixed
+- macOS release assets use space-free names (`Desktop-Pets-<version>-<arch>.dmg`), so
+  `SHA256SUMS.txt`, `latest-mac.yml`, and the uploaded files agree. (The v0.6.0 draft
+  assets were renamed by hand to match.)
+
 ## 0.6.0 — Activity Intelligence (unreleased)
 
 ### Added
