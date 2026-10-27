@@ -133,6 +133,9 @@ if (_initialPrefs && typeof _initialPrefs.desktopPetMode === "boolean") {
 if (_initialPrefs && typeof _initialPrefs.agentSessionReactive === "boolean") {
   agentSessionReactive = _initialPrefs.agentSessionReactive;
 }
+if (_initialPrefs && typeof _initialPrefs.activityTracking === "boolean") {
+  activityTracking = _initialPrefs.activityTracking;
+}
 let activeTheme = loadThemeFromPrefs(_initialPrefs);
 
 // ── CSS <object> sizing (from theme) ──

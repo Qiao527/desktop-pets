@@ -193,7 +193,8 @@ Full details: [docs/privacy.md](docs/privacy.md).
 - Clawd and Calico artwork in the source tree belong to their owners
   ([assets/LICENSE](assets/LICENSE)) and are **not** included in builds.
 - Pochacco is a Sanrio character and is not part of this repository.
-- Parts of this fork were developed with AI assistance (Claude Code); commits
-  record this with a `Co-Authored-By` trailer.
+- Parts of this fork were developed with AI assistance (Claude Code). The
+  commits in the initial pull requests (#1–#5) record this with a
+  `Co-Authored-By` trailer.
 
 See [NOTICE.md](NOTICE.md).
