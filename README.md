@@ -8,7 +8,7 @@
 
 [![CI](https://github.com/Qiao527/desktop-pets/actions/workflows/test.yml/badge.svg)](https://github.com/Qiao527/desktop-pets/actions/workflows/test.yml)
 ![macOS](https://img.shields.io/badge/platform-macOS-111?logo=apple&logoColor=white)
-![Electron 41](https://img.shields.io/badge/Electron-41-47848F?logo=electron&logoColor=white)
+![Electron 42](https://img.shields.io/badge/Electron-42-47848F?logo=electron&logoColor=white)
 ![Node 24](https://img.shields.io/badge/Node-24_LTS-5FA04E?logo=nodedotjs&logoColor=white)
 ![Activity coverage](https://img.shields.io/badge/activity%20coverage-98%25-2a78d6)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
@@ -36,8 +36,8 @@ detection, opt-in private time tracking, and an Insights window.
 <tr>
 <td width="33%" valign="top">
 
-**⚡ Never blocks the UI**<br>
-AppleScript probes run in child processes with timeouts, cancellation, backoff, and no overlap. The animation loop only reads a cached snapshot.
+**⚡ AppleScript off the UI thread**<br>
+Probes run in child processes with timeouts, cancellation, backoff, and no overlap. The animation loop only reads a cached snapshot.
 
 </td>
 <td width="33%" valign="top">
@@ -91,7 +91,7 @@ runs the same probes off-thread.
 | Legacy (sync) · 3 runs | 249–293 ms | 0.6–5.1 s | **88 / 88** | 1.8–2.5 % |
 | Async engine · 2 clean runs | 13.2–13.4 ms | 39–57 ms | **0 / 60** | 3.2 % |
 
-<sub>Real app, Apple M1, macOS 27.0.1, alternating 5-minute runs. A third async run was interrupted by an automatic screen lock: the engine paused as designed, but the lock transition produced stalls up to 7.3 s that are not yet explained. That run is reported separately, not dropped. Full method and raw data: <a href="docs/benchmarks.md">docs/benchmarks.md</a>.</sub>
+<sub>Real app, Apple M1, macOS 27.0.1, alternating 5-minute runs. A third async run was interrupted by an automatic screen lock: the engine paused as designed, but the lock transition produced stalls up to 7.3 s that are not yet explained. That run is reported separately, not dropped. In later runs under active desktop use (2026-10-27), both Electron 41 and 42 builds still showed occasional 100–360 ms stalls in some windows. These are not from the detectors, and they are under investigation. Full method and raw data: <a href="docs/benchmarks.md">docs/benchmarks.md</a>.</sub>
 
 ## See it
 
@@ -215,7 +215,7 @@ Details: [docs/privacy.md](docs/privacy.md) · [SECURITY.md](SECURITY.md)
 - From source, macOS grants detector permissions to your terminal, not to the app.
 - Builds are unsigned and not notarized.
 - The inherited pet windows are not fully sandboxed; only the new Insights window is.
-- Clearing the remaining Electron advisories requires upgrading to Electron 43 ([SECURITY.md](SECURITY.md)).
+- Occasional 100–360 ms main-thread stalls remain during active desktop use. They are not caused by the detectors and are under investigation ([benchmarks](docs/benchmarks.md#follow-up-electron-41-vs-42-2026-10-27)).
 - Windows and Linux code paths are inherited and untested in this fork.
 
 ## Credits & license
