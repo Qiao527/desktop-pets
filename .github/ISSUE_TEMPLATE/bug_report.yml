@@ -1,0 +1,29 @@
+name: Bug report
+description: Something does not work as expected
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: Include what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      placeholder: "macOS 27.0.1, Apple M1, Desktop Pets 0.6.0 (source or DMG)"
+    validations:
+      required: true
+  - type: textarea
+    id: health
+    attributes:
+      label: Detector health
+      description: Activity Insights → Detector health (status and latency), if relevant.

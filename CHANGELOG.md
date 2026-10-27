@@ -22,6 +22,9 @@ the fork's initial Pochacco customization.
 - Test workflow on push and pull request (macOS + Ubuntu, Node 24).
 
 ### Changed
+- Electron 41 → 42.11.18, clearing all open Electron security advisories.
+- Release workflow now builds only the macOS app (Node 24, `npm ci`, tests first, unsigned,
+  package check) and publishes a draft release.
 - AI agent hooks are only written into other tools' configs after the user
   enables *Connect AI Coding Agents*.
 - Packaged builds contain only redistributable artwork.

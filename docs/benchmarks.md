@@ -21,6 +21,7 @@ main-thread responsiveness, and what does it cost?
 
 Runner: [`perf/activity-detectors/run-app.sh`](../perf/activity-detectors/run-app.sh).
 Summary: [`perf/activity-detectors/summarize.js`](../perf/activity-detectors/summarize.js).
+Chart (README): [`perf/activity-detectors/plot.js`](../perf/activity-detectors/plot.js) `legacy-sync-r1.jsonl async-engine-r1.jsonl docs/media/benchmark`.
 Raw data: [`perf/activity-detectors/results/2026-10-26-m1-macos27/`](../perf/activity-detectors/results/2026-10-26-m1-macos27/).
 
 Event-loop delay is how late a timer fires. With a 10 ms sampling resolution,
@@ -86,3 +87,26 @@ Detector health reported by the async build (r3, before the lock):
   running so both builds saw the same conditions.
 - The text-focus probe latency depends on the frontmost app's accessibility
   tree; the frontmost app during these runs was a terminal.
+
+## Follow-up: Electron 41 vs 42 (2026-10-27)
+
+After upgrading Electron 41.10.7 → 42.11.18 (security fixes), both builds were
+run alternately from source for 2 minutes each, on the same M1. This time the
+user was actively using the Mac. Raw data:
+[`results/2026-10-27-m1-electron41-vs-42/`](../perf/activity-detectors/results/2026-10-27-m1-electron41-vs-42/).
+
+| Run | 10 s windows | p99 (median) | Worst max | Windows with a stall > 100 ms | Main CPU % |
+|---|---|---|---|---|---|
+| Electron 41 · r1 | 12 | 18.4 ms | 363.1 ms | 6/12 | 4.1 |
+| Electron 42 · r1 | 12 | 14.8 ms | 113.8 ms | 1/12 | 2.9 |
+| Electron 41 · r2 | 12 | 13.9 ms | 135.4 ms | 3/12 | 3.5 |
+| Electron 42 · r2 | 12 | 14.9 ms | 129.6 ms | 1/12 | 3.0 |
+
+- **No regression from Electron 42**: it was equal or better in both pairs.
+- **The async build is not stall-free under active use.** Both versions showed
+  occasional 100–360 ms stalls, whereas the clean runs on 2026-10-26 showed none.
+  The detectors run in child processes, so these stalls come from other main-thread
+  work. Likely candidates are inherited cursor polling and window and IPC handling
+  while the mouse is moving. This has **not** been profiled yet and is an open item.
+- The comparison with the legacy build stands: legacy stalled in **every** window,
+  with a median p99 of 249–293 ms.

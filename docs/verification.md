@@ -22,6 +22,7 @@ Hardware used: Apple M1, macOS 27.0.1, Node 25.8.2 / Electron 41.
 | V10 | Insights opens without creating data when tracking was never enabled | Real controller + sandboxed window against an empty temp store | No files created |
 | V11 | Insights renders in light and dark mode | Real window capture with `nativeTheme.themeSource` | See `docs/media/insights-*.png` (synthetic data) |
 | V12 | App with Insights wiring starts and quits cleanly; tracking off creates no `activity/` folder | `run-app.sh` 25 s smoke run | Exit 0.5 s after SIGTERM; no folder created |
+| V14 | Electron 42.11.18 upgrade | Unsigned arm64 package built + package check; packaged app launched; 2×2 alternating 2-minute runs vs Electron 41 | Package OK; both detectors `ok`; clean exit; no loop-delay regression vs 41 (see benchmarks.md follow-up) |
 | V13 | Tracking persists across restarts (end-to-end) | Real app with `--user-data-dir=<temp>` and `activityTracking: true`; run 70 s, quit, run 25 s, quit | First attempt **failed**: tracking never resumed after launch (pref read too late). After the fix: 66.8 s recorded in run 1, 90.5 s total after run 2; `history.json` mode 0600; pref still `true`; real profile untouched |
 
 ## Still to perform by hand
