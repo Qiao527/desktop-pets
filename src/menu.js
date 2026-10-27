@@ -63,6 +63,8 @@ const SIZES = {
 
 // ── UI strings (English only) ──
 const STRINGS = {
+    agentIntegration: "Connect AI Coding Agents",
+    activityInsights: "Activity Insights…",
     size: "Size",
     small: "Small (S)",
     medium: "Medium (M)",
@@ -140,11 +142,11 @@ module.exports = function initMenu(ctx) {
   // ── Theme submenu builder ──
   function buildThemeSubmenu() {
     const themes = ctx.discoverThemes ? ctx.discoverThemes() : [];
-    const activeId = ctx.getActiveThemeId ? ctx.getActiveThemeId() : "pochacco-test";
+    const activeId = ctx.getActiveThemeId ? ctx.getActiveThemeId() : null;
 
-    const hiddenThemeIds = new Set(["clawd", "calico"]);
+    // "template" is documentation for theme authors, not a selectable theme
     const items = themes
-      .filter(theme => !hiddenThemeIds.has(theme.id))
+      .filter(theme => theme.id !== "template")
       .map(theme => ({
       label: theme.name + (theme.builtin ? "" : " ✦"),
       type: "radio",
@@ -386,6 +388,8 @@ module.exports = function initMenu(ctx) {
         enabled: false,
       },
       { type: "separator" },
+      { label: t("activityInsights"), click: () => ctx.openInsights() },
+      { type: "separator" },
       { label: t("quit"), click: () => requestAppQuit() },
     );
     ctx.tray.setContextMenu(Menu.buildFromTemplate(items));
@@ -610,6 +614,18 @@ module.exports = function initMenu(ctx) {
         click: () => ctx.doNotDisturb ? ctx.disableDoNotDisturb() : ctx.enableDoNotDisturb(),
       },
       { type: "separator" },
+      {
+        // Opt-in: enabling writes hook entries into each agent's own config
+        label: t("agentIntegration"),
+        type: "checkbox",
+        checked: ctx.agentSessionReactive === true,
+        click: (menuItem) => {
+          ctx.agentSessionReactive = menuItem.checked;
+          if (menuItem.checked) ctx.syncAgentIntegrations();
+          ctx.savePrefs();
+          rebuildAllMenus();
+        },
+      },
       ...(ctx.agentSessionReactive !== false ? [{
         label: `${t("sessions")} (${ctx.sessions.size})`,
         submenu: ctx.buildSessionSubmenu(),
@@ -646,6 +662,8 @@ module.exports = function initMenu(ctx) {
         label: t("toggleShortcut").replace("{shortcut}", isMac ? "⌘⇧⌥C" : "Ctrl+Shift+Alt+C"),
         enabled: false,
       },
+      { type: "separator" },
+      { label: t("activityInsights"), click: () => ctx.openInsights() },
       { type: "separator" },
       { label: t("quit"), click: () => requestAppQuit() },
     );

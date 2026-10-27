@@ -1,5 +1,6 @@
-const { app, BrowserWindow, screen, Menu, ipcMain, globalShortcut } = require("electron");
+const { app, BrowserWindow, screen, Menu, ipcMain, globalShortcut, powerMonitor, shell } = require("electron");
 const path = require("path");
+const { pathToFileURL } = require("url");
 const fs = require("fs");
 const { applyStationaryCollectionBehavior } = require("./mac-window");
 const hitGeometry = require("./hit-geometry");
@@ -42,6 +43,7 @@ let lang = "en";
 const PREFS_PATH = path.join(app.getPath("userData"), "desktop-pets-prefs.json");
 let desktopPetMode = true;
 let agentSessionReactive = false;
+let activityTracking = false;        // opt-in: nothing is recorded until enabled
 
 function legacyPrefsPaths() {
   const home = app.getPath("home");
@@ -79,6 +81,7 @@ function loadPrefs() {
     if (!raw || typeof raw !== "object") return null;
     if (typeof raw.desktopPetMode !== "boolean") raw.desktopPetMode = true;
     if (typeof raw.agentSessionReactive !== "boolean") raw.agentSessionReactive = false;
+    if (typeof raw.activityTracking !== "boolean") raw.activityTracking = false;
     // Validate miniEdge allowlist
     if (raw.miniEdge !== "left" && raw.miniEdge !== "right") raw.miniEdge = "right";
     // Sanitize numeric fields — corrupted JSON can feed NaN into window positioning
@@ -103,11 +106,14 @@ function savePrefs() {
     autoStartWithClaude, bubbleFollowPet, hideBubbles, showSessionId, soundMuted,
     desktopPetMode,
     agentSessionReactive,
-    theme: activeTheme ? activeTheme._id : "pochacco-test",
+    activityTracking,
+    theme: activeTheme ? activeTheme._id : themeLoader.DEFAULT_THEME_ID,
   };
   try { fs.writeFileSync(PREFS_PATH, JSON.stringify(data)); } catch {}
 }
 
+let _perfLog = null;                // opt-in benchmark sampler (DESKTOP_PETS_PERF_LOG)
+let _insights = null;               // Activity Insights window controller
 let _codexMonitor = null;          // Codex CLI JSONL log polling instance
 let _geminiMonitor = null;         // Gemini CLI session JSON polling instance
 
@@ -117,9 +123,8 @@ themeLoader.init(__dirname, app.getPath("userData"));
 
 function loadThemeFromPrefs(prefs) {
   const t = prefs && prefs.theme;
-  // Treat built-in defaults as replaced by pochacco-test
-  const desired = (!t || t === "clawd" || t === "calico") ? "pochacco-test" : t;
-  return themeLoader.loadTheme(desired);
+  // Unknown or missing themes fall back to DEFAULT_THEME_ID inside loadTheme()
+  return themeLoader.loadTheme(t || themeLoader.DEFAULT_THEME_ID);
 }
 const _initialPrefs = loadPrefs();
 if (_initialPrefs && typeof _initialPrefs.desktopPetMode === "boolean") {
@@ -127,6 +132,9 @@ if (_initialPrefs && typeof _initialPrefs.desktopPetMode === "boolean") {
 }
 if (_initialPrefs && typeof _initialPrefs.agentSessionReactive === "boolean") {
   agentSessionReactive = _initialPrefs.agentSessionReactive;
+}
+if (_initialPrefs && typeof _initialPrefs.activityTracking === "boolean") {
+  activityTracking = _initialPrefs.activityTracking;
 }
 let activeTheme = loadThemeFromPrefs(_initialPrefs);
 
@@ -471,7 +479,41 @@ function getHitRectScreen(bounds) {
 }
 
 // ── Main tick — delegated to src/tick.js ──
+// ── Activity detection (async macOS detectors) — see src/activity/ ──
+const { createActivityEngine } = require("./activity/engine");
+const activityEngine = createActivityEngine({
+  powerMonitor,
+  // Poll at full rate while readings drive animations or are being recorded
+  isObserved: () => (desktopPetMode && !doNotDisturb && !_mini.getMiniMode())
+    || activityRecorder.isEnabled(),
+});
+
+// Opt-in recorder + Insights window (src/activity/recorder.js, src/insights/)
+const { createStore } = require("./activity/store");
+const { createActivityRecorder } = require("./activity/recorder");
+const activityRecorder = createActivityRecorder({
+  store: createStore({ dir: path.join(app.getPath("userData"), "activity") }),
+  engine: activityEngine,
+  powerMonitor,
+  // OS-wide keyboard+mouse idle seconds (no content), used to detect "away"
+  getUserIdleMs: () => powerMonitor.getSystemIdleTime() * 1000,
+  getDoNotDisturb: () => doNotDisturb,
+  getSessions: () => (agentSessionReactive ? sessions : null),
+});
+
+async function setActivityTracking(enabled) {
+  if (enabled) {
+    await activityRecorder.enable();
+    activityEngine.refresh(); // switch to the fast interval now, not after the slow one
+  } else {
+    await activityRecorder.disable();
+  }
+  activityTracking = enabled;
+  savePrefs();
+}
+
 const _tickCtx = {
+  activityEngine,
   get theme() { return activeTheme; },
   get win() { return win; },
   get currentState() { return _state.getCurrentState(); },
@@ -666,9 +708,12 @@ const _menuCtx = {
   reapplyMacVisibility,
   switchTheme: (id) => switchTheme(id),
   discoverThemes: () => themeLoader.discoverThemes(),
-  getActiveThemeId: () => activeTheme ? activeTheme._id : "pochacco-test",
+  getActiveThemeId: () => activeTheme ? activeTheme._id : themeLoader.DEFAULT_THEME_ID,
   getActiveThemeName: () => (activeTheme && activeTheme.name) || "Desktop Pets",
   get agentSessionReactive() { return agentSessionReactive; },
+  set agentSessionReactive(v) { agentSessionReactive = !!v; },
+  syncAgentIntegrations: () => _server.syncAgentIntegrations(),
+  openInsights: () => _insights && _insights.open(),
   ensureUserThemesDir: () => themeLoader.ensureUserThemesDir(),
 };
 const _menu = require("./menu")(_menuCtx);
@@ -717,6 +762,7 @@ function createWindow() {
   if (prefs && typeof prefs.soundMuted === "boolean") soundMuted = prefs.soundMuted;
   if (prefs && typeof prefs.desktopPetMode === "boolean") desktopPetMode = prefs.desktopPetMode;
   if (prefs && typeof prefs.agentSessionReactive === "boolean") agentSessionReactive = prefs.agentSessionReactive;
+  if (prefs && typeof prefs.activityTracking === "boolean") activityTracking = prefs.activityTracking;
   // macOS: apply dock visibility (default hidden)
   if (isMac) {
     applyDockVisibility();
@@ -1208,6 +1254,30 @@ if (!gotTheLock) {
   }
 
   app.whenReady().then(() => {
+    _perfLog = require("./diagnostics/perf-log").startPerfLog({
+      label: process.env.DESKTOP_PETS_PERF_LABEL || "",
+      extra: () => ({
+        detectors: activityEngine.getHealth().map((h) => ({
+          name: h.name, status: h.status, runs: h.totalRuns, failures: h.totalFailures,
+          timeouts: h.totalTimeouts, lastErrorKind: h.lastErrorKind, latencyMs: h.latencyMs,
+        })),
+      }),
+    });
+    activityEngine.start();
+    _insights = require("./insights/controller").createInsightsController({
+      BrowserWindow, ipcMain, shell,
+      recorder: activityRecorder,
+      engine: activityEngine,
+      setTrackingEnabled: setActivityTracking,
+      htmlPath: path.join(__dirname, "insights", "index.html"),
+      preloadPath: path.join(__dirname, "preload-insights.js"),
+      expectedUrl: pathToFileURL(path.join(__dirname, "insights", "index.html")).href,
+      isDev: !app.isPackaged,
+    });
+    _insights.register();
+    if (activityTracking) {
+      activityRecorder.enable().catch((err) => console.warn("Desktop Pets: activity tracking not started:", err.message));
+    }
     permDebugLog = path.join(app.getPath("userData"), "permission-debug.log");
     updateDebugLog = path.join(app.getPath("userData"), "update-debug.log");
     createWindow();
@@ -1260,8 +1330,22 @@ if (!gotTheLock) {
     setupAutoUpdater();
   });
 
-  app.on("before-quit", () => {
+  let activityFlushedOnQuit = false;
+  app.on("before-quit", (event) => {
+    // Persist tracked time before tearing anything down (bounded to 1.5s)
+    if (activityRecorder.isEnabled() && !activityFlushedOnQuit) {
+      event.preventDefault();
+      activityFlushedOnQuit = true;
+      Promise.race([
+        activityRecorder.disable(),
+        new Promise((resolve) => setTimeout(resolve, 1500)),
+      ]).catch(() => {}).finally(() => app.quit());
+      return;
+    }
     isQuitting = true;
+    if (_perfLog) _perfLog.stop();
+    activityEngine.stop();
+    if (_insights) _insights.dispose();
     savePrefs();
     unregisterToggleShortcut();
     globalShortcut.unregisterAll();

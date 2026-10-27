@@ -6,9 +6,13 @@ const { pathToFileURL } = require("url");
 
 // ── Defaults (used when theme.json omits optional fields) ──
 
+// Default + fallback theme. Pip's artwork is original to this repository and
+// is the only theme bundled into packaged builds (see package.json "files").
+const DEFAULT_THEME_ID = "pip";
+
 const DEFAULT_SOUNDS = {
-  complete: "complete.mp3",
-  confirm:  "confirm.mp3",
+  complete: "pip-complete.wav",
+  confirm:  "pip-confirm.wav",
 };
 
 const DEFAULT_TIMINGS = {
@@ -146,14 +150,14 @@ function loadTheme(themeId) {
 
   if (!raw) {
     console.error(`[theme-loader] Theme "${themeId}" not found`);
-    if (themeId !== "clawd") return loadTheme("clawd");
-    throw new Error("Default theme 'clawd' not found");
+    if (themeId !== DEFAULT_THEME_ID) return loadTheme(DEFAULT_THEME_ID);
+    throw new Error(`Default theme '${DEFAULT_THEME_ID}' not found`);
   }
 
   const errors = validateTheme(raw);
   if (errors.length > 0) {
     console.error(`[theme-loader] Theme "${themeId}" validation errors:`, errors);
-    if (themeId !== "clawd") return loadTheme("clawd");
+    if (themeId !== DEFAULT_THEME_ID) return loadTheme(DEFAULT_THEME_ID);
   }
 
   // Merge defaults for optional fields
@@ -713,6 +717,8 @@ function getSoundUrl(soundName) {
 }
 
 module.exports = {
+  DEFAULT_THEME_ID,
+  validateTheme,
   init,
   discoverThemes,
   loadTheme,
