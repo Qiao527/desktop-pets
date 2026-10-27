@@ -5,7 +5,7 @@
   "main": "src/main.js",
   "scripts": {
     "start": "node launch.js",
-    "build": "electron-builder --win",
+    "build": "npm run build:mac:unsigned",
     "build:mac": "electron-builder --mac",
     "build:mac:unsigned": "CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac --publish never",
     "check:package": "node scripts/check-package.js \"dist/mac-arm64/Desktop Pets.app/Contents/Resources/app.asar\"",
